@@ -17,8 +17,12 @@ export interface ResearchSearch {
 export default function JunoPage() {
   const [paper, setPaper] = useState<string>("");
   return (
-    <div className="h-full w-full p-6 pt-2 flex-1 min-h-0 bg-blue-500">
-      <ResizablePanelGroup direction="horizontal" style={{ overflow: "visible" }}>
+    <div className="h-full w-full p-6 pt-2 flex-1 min-h-0 flex flex-col">
+      <ResizablePanelGroup
+        direction="horizontal"
+        style={{ overflow: "visible" }}
+        className="min-h-0 flex-1"
+      >
         {/* <ResizablePanel defaultSize={13}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
             <div className="text-3xl font-light font-serif tracking-tight pl-2">Process</div>

@@ -10,7 +10,7 @@ export default function Agent({ className }: { className?: string }) {
   const { messages, input, handleInputChange, handleSubmit } = useChat({});
 
   return (
-    <div className={cn("flex flex-col gap-2 relative bg-red-500 h-full", className)}>
+    <div className={cn("flex flex-col gap-2 relative", className)}>
       {messages.map((message) =>
         message.role === "user" ? (
           <UserMessage message={message.content} key={message.id} />
