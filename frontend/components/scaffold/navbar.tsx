@@ -10,10 +10,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 // Navigation links array to be used in both desktop and mobile menus
 const navigationLinks = [
-  { href: "#", label: "Home", active: true },
-  { href: "#", label: "Features" },
-  { href: "#", label: "Pricing" },
-  { href: "#", label: "About" },
+  { href: "/", label: "Home", active: true },
+  { href: "/juno", label: "Juno" },
+  { href: "/", label: "Pricing" },
+  { href: "/about", label: "About" },
 ];
 
 export default function Component() {
