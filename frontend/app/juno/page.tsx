@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { ChevronRight } from "lucide-react";
+import Paper from "@/components/paper/paper";
 
 export interface ResearchSearch {
   query: string;
@@ -24,13 +25,13 @@ export default function JunoPage() {
         className="min-h-0 flex-1"
       >
         <ResizablePanel defaultSize={30} style={{ overflow: "visible" }}>
-          <div className="flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible">
+          <div className="flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible max-w-2xl mx-auto">
             <div className="text-4xl font-serif tracking-tight">Document</div>
-            {/* <Paper className="min-h-0 w-full flex-1" paper={paper} setPaper={setPaper} /> */}
+            <Paper className="min-h-0 w-full flex-1" paper={paper} setPaper={setPaper} />
           </div>
         </ResizablePanel>
         <ResizableHandle className="bg-transparent p-2 w-4" />
-        <ResizablePanel defaultSize={20}>
+        <ResizablePanel defaultSize={10}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
             <div className="text-4xl font-serif tracking-tight">Juno Agent</div>
             <Agent className="h-full w-full" />
