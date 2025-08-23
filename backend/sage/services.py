@@ -61,13 +61,14 @@ def chat_request(
     # Ensure chat exists and fetch history
     convex_client = _get_convex_client()
     if not chat_id:
-        chat_id = convex_client.mutation("chats:createChat", {"title": title or None})
+        chat_id = convex_client.mutation("chats:createChat", {"title": title or ""})
     try:
         history: List[Dict[str, Any]] = convex_client.query("chats:getMessages", {"chatId": chat_id, "limit": 1000})
     except Exception:
         logger.exception("chat_request: failed to fetch history")
         history = []
 
+    print("CONVERSATION HISTORY: ", history)
     # Persist current user message immediately
     try:
         convex_client.mutation(
@@ -157,12 +158,9 @@ def chat_request(
         logger.exception("chat_request: failed to refetch messages")
         messages = history
 
-    return {
-        "text": getattr(res, "text", None),
-        "tool_calls": getattr(res, "tool_calls", None),
-        "tool_results": getattr(res, "tool_results", None),
-        "chat_id": chat_id,
-        "messages": messages,
-    }
+    # Shape to minimal history format
+    history_min = [{"role": m.get("role", "user"), "content": m.get("content", "")} for m in messages]
+
+    return {"chat_id": chat_id, "messages": history_min}
 
 
