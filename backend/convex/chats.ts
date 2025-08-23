@@ -63,3 +63,22 @@ export const getChat = query({
 });
 
 
+export const listChats = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(args.limit ?? 1000, 1000));
+    const chats = await ctx.db
+      .query("chats")
+      .withIndex("by_created_at")
+      .order("desc")
+      .take(limit);
+    return chats.map((c) => ({
+      _id: c._id,
+      title: c.title,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+  },
+});
+
+

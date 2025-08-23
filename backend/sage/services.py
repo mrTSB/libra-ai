@@ -60,8 +60,32 @@ def chat_request(
 
     # Ensure chat exists and fetch history
     convex_client = _get_convex_client()
+    generated_title: Optional[str] = None
     if not chat_id:
-        chat_id = convex_client.mutation("chats:createChat", {"title": title or ""})
+        # Generate a concise title from the user's prompt using the model
+        try:
+            title_prompt = (
+                "Create a concise, 3-7 word title summarizing the user's question. "
+                "No quotes. No ending punctuation. Title case.\n\n"
+                f"User: {prompt}"
+            )
+            title_res = generate_text(
+                model=model,
+                prompt=title_prompt,
+                tools=[],
+            )
+            candidate = (title_res.text or "").strip()
+            # Basic cleanup
+            candidate = candidate.strip('"\'').strip()
+            if candidate.endswith(('.', '!', '?')):
+                candidate = candidate[:-1].strip()
+            # Fallback if model returned empty
+            generated_title = candidate or (prompt[:60].strip() + ("…" if len(prompt) > 60 else ""))
+        except Exception:
+            logger.exception("chat_request: failed to generate title, using fallback")
+            generated_title = prompt[:60].strip() + ("…" if len(prompt) > 60 else "")
+
+        chat_id = convex_client.mutation("chats:createChat", {"title": generated_title})
     try:
         history: List[Dict[str, Any]] = convex_client.query("chats:getMessages", {"chatId": chat_id, "limit": 1000})
     except Exception:
@@ -128,7 +152,7 @@ def chat_request(
                     )
                 except Exception:
                     logger.exception("chat_request: failed to persist assistant message (stream)")
-        return generator(), chat_id
+        return generator(), chat_id, generated_title
 
     res = generate_text(
         model=model,
@@ -161,6 +185,43 @@ def chat_request(
     # Shape to minimal history format
     history_min = [{"role": m.get("role", "user"), "content": m.get("content", "")} for m in messages]
 
-    return {"chat_id": chat_id, "messages": history_min}
+    # For non-streaming, also include title
+    # If chat existed already, fetch its title
+    title_to_return = generated_title
+    if not title_to_return:
+        try:
+            chat_obj = convex_client.query("chats:getChat", {"chatId": chat_id})
+            if isinstance(chat_obj, dict):
+                title_to_return = chat_obj.get("title")
+        except Exception:
+            logger.exception("chat_request: failed to fetch chat title")
+            title_to_return = None
+
+    return {"chat_id": chat_id, "title": title_to_return, "messages": history_min}
 
 
+
+def get_chats_request(limit: int | None = None) -> Dict[str, Any]:
+    """
+    Fetch a list of chats from Convex ordered by most recent first.
+
+    Returns a dict with `chats`: [{"id", "title", "createdAt", "updatedAt"}]
+    """
+    convex_client = _get_convex_client()
+    try:
+        chats: List[Dict[str, Any]] = convex_client.query(
+            "chats:listChats", {"limit": limit} if limit is not None else {}
+        )
+    except Exception:
+        logger.exception("get_chats_request: failed to fetch chats")
+        chats = []
+
+    normalized = [
+        {
+            "id": c.get("_id"),
+            "title": c.get("title", ""),
+        }
+        for c in chats
+    ]
+
+    return {"chats": normalized}
