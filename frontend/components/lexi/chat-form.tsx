@@ -26,64 +26,40 @@ export function LexiChatForm({ onSubmit, loading }: Props) {
   const [maxWeb, setMaxWeb] = useState(3);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lexi Q&A</CardTitle>
-      </CardHeader>
-      <Input
-        placeholder="Ask a legal question..."
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        disabled={loading}
-      />
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Switch id="useWeb" checked={useWeb} onCheckedChange={setUseWeb} />
-          <Label htmlFor="useWeb">Use web search</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch id="useLocal" checked={useLocal} onCheckedChange={setUseLocal} />
-          <Label htmlFor="useLocal">Use local docs</Label>
-        </div>
+    <div className="flex flex-col justify-center items-center h-full">
+      <h1 className="text-9xl font-serif font-semibold  scale-110 text-transparent bg-clip-text bg-gradient-to-b from-stone-800 to-stone-800/40">
+        Lexi
+      </h1>
+      <h3 className="text-4xl font-serif font-semibold italic text-muted-foreground/80 mb-10">
+        Your expert on the law
+      </h3>
+
+      <div className="relative w-full max-w-2xl mb-32">
+        <Input
+          placeholder="Is it legal to..."
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          disabled={loading}
+          className="w-full p-6 py-8 text-lg rounded-3xl shadow-xl shadow-foreground/5 hover:bg-muted/50"
+        />
+
+        <Button
+          onClick={() =>
+            onSubmit({
+              question,
+              use_web_search: useWeb,
+              use_local_docs: useLocal,
+              max_local_results: maxLocal,
+              max_web_results: maxWeb,
+            })
+          }
+          disabled={loading || question.trim().length === 0}
+          variant="fancy"
+          className="absolute right-3 top-1/2 -translate-y-1/2 hover:-translate-y-1/2 active:-translate-y-1/2"
+        >
+          {loading ? "Asking..." : "Ask Lexi"}
+        </Button>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="maxLocal">Max local results</Label>
-          <Input
-            id="maxLocal"
-            type="number"
-            min={0}
-            value={maxLocal}
-            onChange={(e) => setMaxLocal(Number(e.target.value))}
-            disabled={loading}
-          />
-        </div>
-        <div>
-          <Label htmlFor="maxWeb">Max web results</Label>
-          <Input
-            id="maxWeb"
-            type="number"
-            min={0}
-            value={maxWeb}
-            onChange={(e) => setMaxWeb(Number(e.target.value))}
-            disabled={loading}
-          />
-        </div>
-      </div>
-      <Button
-        onClick={() =>
-          onSubmit({
-            question,
-            use_web_search: useWeb,
-            use_local_docs: useLocal,
-            max_local_results: maxLocal,
-            max_web_results: maxWeb,
-          })
-        }
-        disabled={loading || question.trim().length === 0}
-      >
-        {loading ? "Asking..." : "Ask Lexi"}
-      </Button>
-    </Card>
+    </div>
   );
 }

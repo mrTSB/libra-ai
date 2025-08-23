@@ -17,14 +17,6 @@ export function LexiChatResponseView({ response }: Props) {
 
         <Markdown>{response.answer || ""}</Markdown>
       </Card>
-      {response.reasoning && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Reasoning</CardTitle>
-          </CardHeader>
-          <Markdown>{response.reasoning}</Markdown>
-        </Card>
-      )}
     </div>
   );
 }
