@@ -71,7 +71,7 @@ export default function ChatInput({
             ))}
           </SelectContent>
         </Select>
-        <Button size="iconSm" type="submit" className="ml-auto shadow-none">
+        <Button size="iconSm" variant="fancy" type="submit" className="ml-auto shadow-none">
           <ArrowUp className="h-4 w-4" />
         </Button>
       </div>

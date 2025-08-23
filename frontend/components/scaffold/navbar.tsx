@@ -95,7 +95,7 @@ export default function Component() {
           <Button asChild variant="ghost" size="sm" className="text-sm">
             <a href="#">Sign In</a>
           </Button>
-          <Button asChild size="sm" className="text-sm">
+          <Button asChild variant="fancy" size="sm" className="text-sm">
             <a href="#">Get Started</a>
           </Button>
         </div>
