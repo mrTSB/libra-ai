@@ -1,0 +1,3 @@
+convex>=0.4.0
+asyncio
+python-dotenv>=1.0.0
