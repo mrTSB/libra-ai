@@ -175,6 +175,14 @@ class FiloraBrowserAgent:
             # Execute the task using Browser Use AI agent
             result = await agent.run()
             
+            # Capture screenshots from Browser Use agent
+            screenshots = []
+            try:
+                screenshots = agent.history.screenshots()
+                logger.info(f"Captured {len(screenshots)} screenshots")
+            except Exception as e:
+                logger.warning(f"Could not capture screenshots: {e}")
+            
             # Update task status
             execution_time = time.time() - start_time
             task_info["status"] = TaskStatus.COMPLETED
@@ -184,7 +192,7 @@ class FiloraBrowserAgent:
             return {
                 "task_id": task_id,
                 "result": self._format_browser_use_result(result, request),
-                "screenshots": [],  # Browser Use handles screenshots internally
+                "screenshots": screenshots,
                 "execution_time": execution_time,
                 "locations": self._extract_locations_from_result(result, request)
             }
