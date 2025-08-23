@@ -17,29 +17,22 @@ export interface ResearchSearch {
 export default function JunoPage() {
   const [paper, setPaper] = useState<string>("");
   return (
-    <div className="h-full w-full p-6 pt-2 flex-1 min-h-0 flex flex-col">
+    <div className="h-full w-full p-4 pt-2 flex-1 min-h-0 flex flex-col">
       <ResizablePanelGroup
         direction="horizontal"
         style={{ overflow: "visible" }}
         className="min-h-0 flex-1"
       >
-        {/* <ResizablePanel defaultSize={13}>
-          <div className="flex flex-col h-full w-full items-start justify-start gap-4">
-            <div className="text-3xl font-light font-serif tracking-tight pl-2">Process</div>
-            <Process className="h-full w-full px-4 pr-8" currentStep={paper.stageIndex} />
-          </div>
-        </ResizablePanel> */}
-        <ResizableHandle className="bg-transparent w-4" />
         <ResizablePanel defaultSize={30} style={{ overflow: "visible" }}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible">
-            <div className="text-3xl font-light font-serif tracking-tight">Document</div>
+            <div className="text-4xl font-serif tracking-tight">Document</div>
             {/* <Paper className="min-h-0 w-full flex-1" paper={paper} setPaper={setPaper} /> */}
           </div>
         </ResizablePanel>
-        <ResizableHandle className="bg-transparent w-4" />
+        <ResizableHandle className="bg-transparent p-2 w-4" />
         <ResizablePanel defaultSize={20}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
-            <div className="text-3xl font-light font-serif tracking-tight">Juno Agent</div>
+            <div className="text-4xl font-serif tracking-tight">Juno Agent</div>
             <Agent className="h-full w-full" />
           </div>
         </ResizablePanel>
