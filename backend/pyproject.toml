@@ -20,4 +20,5 @@ dependencies = [
     "requests>=2.31.0",
     "browser-use>=0.6.1",
     "ai-sdk-python>=0.1.0",
+    "agentmail>=0.0.53",
 ]

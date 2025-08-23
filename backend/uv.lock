@@ -7,6 +7,22 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "agentmail"
+version = "0.0.53"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "typing-extensions" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/ae/2ec8641ef80237bb5414adb3c9686e2164b67d90f78ef264eac61aca5e08/agentmail-0.0.53.tar.gz", hash = "sha256:96ddf018a9a08d801810aa8b06001d814e1d713f59ecbc572474f28f6bbd0c1f", size = 55523 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f5/c5/75aa40329df0cc45485d4aaa0ee5a08cc5129999bda892e4cf8c5ab75b24/agentmail-0.0.53-py3-none-any.whl", hash = "sha256:db8eb5ea1e7c08864227b5eaaeb2cc64250e2c5d4ec1577721148fedd7a62e4b", size = 128567 },
+]
+
+[[package]]
 name = "ai-sdk-python"
 version = "0.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -178,6 +194,7 @@ name = "backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "agentmail" },
     { name = "ai-sdk-python" },
     { name = "anthropic" },
     { name = "asyncio" },
@@ -197,6 +214,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agentmail", specifier = ">=0.0.53" },
     { name = "ai-sdk-python", specifier = ">=0.1.0" },
     { name = "anthropic", specifier = ">=0.21.0" },
     { name = "asyncio" },

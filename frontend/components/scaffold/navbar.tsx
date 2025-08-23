@@ -16,6 +16,7 @@ const navigationLinks = [
   { href: "/filora", label: "Filora" },
   { href: "/sage", label: "Sage" },
   { href: "/juris", label: "Juris" },
+  { href: "/donna", label: "Donna" },
   { href: "/about", label: "About" },
 ];
 

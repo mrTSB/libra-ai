@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/scaffold/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
         <div className="flex flex-col h-screen bg-gradient-to-t from-primary/5 to-transparent overflow-hidden">
           <Navbar />
           {children}
+          <Toaster position="top-right" richColors closeButton />
         </div>
       </body>
     </html>

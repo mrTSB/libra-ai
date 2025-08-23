@@ -3,7 +3,7 @@ import os
 import json
 import logging
 from ai_sdk import anthropic, generate_text
-from donna.constants import specialists
+from constants import specialists
 import dotenv
 
 dotenv.load_dotenv()
@@ -29,7 +29,11 @@ def _select_expert_by_specialty(text: str) -> Dict[str, Any]:
                     score += 1
         if score > best_score:
             best_score = score
-            best = {"email": spec.get("email"), "specialties": spec.get("specialties", []), "score": score}
+            best = {
+                "email": spec.get("email"),
+                "specialties": spec.get("specialties", []),
+                "score": score,
+            }
     return best or {"email": None, "specialties": [], "score": 0}
 
 
@@ -42,7 +46,7 @@ def _select_expert_via_llm(model, subject: str, body_text: str) -> Dict[str, Any
         prompt = (
             "You are selecting the best legal specialist to handle an incoming client email.\n"
             "Choose the most relevant specialist based on the email content and the list below.\n"
-            "Return STRICT JSON only in this exact schema: {\"email\": string, \"reason\": string}.\n\n"
+            'Return STRICT JSON only in this exact schema: {"email": string, "reason": string}.\n\n'
             f"SPECIALISTS:\n{spec_json}\n\n"
             f"EMAIL SUBJECT:\n{subject}\n\n"
             f"EMAIL BODY:\n{body_text[:8000]}\n"
@@ -59,7 +63,11 @@ def _select_expert_via_llm(model, subject: str, body_text: str) -> Dict[str, Any
         if isinstance(email, str) and email:
             # find matching specialist to attach specialties
             match = next((s for s in specialists if s.get("email") == email), None)
-            return {"email": email, "specialties": (match or {}).get("specialties", []), "reason": reason}
+            return {
+                "email": email,
+                "specialties": (match or {}).get("specialties", []),
+                "reason": reason,
+            }
     except Exception:
         logging.exception("expert selection via LLM failed; falling back")
     # Fallback heuristic
@@ -79,7 +87,9 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
 
     api_key = os.getenv("AGENT_MAIL_API_KEY")
     if not api_key:
-        yield _sse("error", {"stage": "config", "error": "AGENT_MAIL_API_KEY is not set"})
+        yield _sse(
+            "error", {"stage": "config", "error": "AGENT_MAIL_API_KEY is not set"}
+        )
         return
 
     inbox_id_env = os.getenv("INBOX_ID", "donneragent@agentmail.to")
@@ -97,7 +107,12 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         )
         message_id = (sent or {}).get("id") if isinstance(sent, dict) else None
         if not message_id:
-            yield _sse("warning", {"message": "message_id not returned; proceeding with provided content"})
+            yield _sse(
+                "warning",
+                {
+                    "message": "message_id not returned; proceeding with provided content"
+                },
+            )
     except Exception as exc:
         yield _sse("error", {"stage": "create_initial_message", "error": str(exc)})
         return
@@ -106,7 +121,11 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
     body_text = message or ""
     yield _sse("email_created", {"subject": subject, "size": len(body_text)})
 
-    model = anthropic("claude-sonnet-4-20250514", temperature=0.0, api_key=os.getenv("ANTHROPIC_API_KEY"))
+    model = anthropic(
+        "claude-sonnet-4-20250514",
+        temperature=0.0,
+        api_key=os.getenv("ANTHROPIC_API_KEY"),
+    )
 
     yield _sse("status", {"message": "generating_title"})
     try:
@@ -118,12 +137,14 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
             ),
             tools=[],
         )
-        case_title = (title_res.text or "").strip().strip('"\'')
-        if case_title.endswith(('.', '!', '?')):
+        case_title = (title_res.text or "").strip().strip("\"'")
+        if case_title.endswith((".", "!", "?")):
             case_title = case_title[:-1].strip()
     except Exception:
         logging.exception("workflow: title generation failed")
-        case_title = (subject or body_text[:60]).strip() + ("…" if len(subject or body_text) > 60 else "")
+        case_title = (subject or body_text[:60]).strip() + (
+            "…" if len(subject or body_text) > 60 else ""
+        )
     yield _sse("title", {"title": case_title})
 
     yield _sse("status", {"message": "generating_questions"})
@@ -138,7 +159,10 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         'Return STRICT JSON only in this exact schema: {"viability_questions": string[], "cross_field_questions": string[]}\n\n'
         f"EMAIL:\n{body_text[:8000]}\n"
     )
-    questions_json: Dict[str, Any] = {"viability_questions": [], "cross_field_questions": []}
+    questions_json: Dict[str, Any] = {
+        "viability_questions": [],
+        "cross_field_questions": [],
+    }
     try:
         q_res = generate_text(model=model, prompt=prompt_questions, tools=[])
         raw = (q_res.text or "").strip()
@@ -203,7 +227,9 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         lines: List[str] = []
         lines.append("Hello,")
         lines.append("")
-        lines.append("We received the following inquiry and would value your input as the most relevant specialist.")
+        lines.append(
+            "We received the following inquiry and would value your input as the most relevant specialist."
+        )
         lines.append("")
         lines.append(f"Subject: {subject}")
         lines.append("")
@@ -215,15 +241,24 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         for q in questions_json.get("cross_field_questions", [])[:6]:
             lines.append(f"- {q}")
         lines.append("")
-        lines.append("Please reply with your assessment and any additional considerations.")
+        lines.append(
+            "Please reply with your assessment and any additional considerations."
+        )
         lines.append("")
         lines.append("Thank you.")
         email_body = "\n".join(lines)
 
-    yield _sse("email_draft", {"to": expert.get("email"), "subject": email_subject, "text": email_body})
+    yield _sse(
+        "email_draft",
+        {"to": expert.get("email"), "subject": email_subject, "text": email_body},
+    )
 
     sent_flag = False
-    allow_external = os.getenv("ALLOW_EXTERNAL_EMAIL", "false").lower() in ("1", "true", "yes")
+    allow_external = os.getenv("ALLOW_EXTERNAL_EMAIL", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     if not send_email or not expert.get("email"):
         yield _sse("status", {"message": "skipping_send_expert_email"})
     elif not allow_external:
@@ -241,8 +276,14 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         try:
             sent_result = None
             if hasattr(client, "messages") and hasattr(client.messages, "send"):
-                sent_result = client.messages.send(to=expert.get("email"), subject=email_subject, text=email_body)
-            elif hasattr(client.inboxes.messages, "reply") and 'message_id' in locals() and message_id:
+                sent_result = client.messages.send(
+                    to=expert.get("email"), subject=email_subject, text=email_body
+                )
+            elif (
+                hasattr(client.inboxes.messages, "reply")
+                and "message_id" in locals()
+                and message_id
+            ):
                 sent_result = client.inboxes.messages.reply(
                     inbox_id=inbox_id_env,
                     message_id=message_id,
@@ -253,7 +294,10 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
             else:
                 raise RuntimeError("AgentMail send method not available")
             sent_flag = True
-            yield _sse("email_sent", {"result": sent_result if isinstance(sent_result, dict) else True})
+            yield _sse(
+                "email_sent",
+                {"result": sent_result if isinstance(sent_result, dict) else True},
+            )
         except Exception as exc:
             yield _sse("error", {"stage": "send_email", "error": str(exc)})
 
@@ -297,9 +341,7 @@ def run_workflow_sse(message: str, title: str, send_email: bool = False):
         memo_text = (memo_res.text or "").strip()
     except Exception:
         logging.exception("memo generation failed")
-        memo_text = (
-            "Background\nSummary pending.\n\nKey Facts\n- Pending.\n\nLegal Issues\n- Pending.\n\nAnalysis\n- Pending.\n\nPros\n- Pending.\n\nCons\n- Pending.\n\nRisk and Exposure\n- Pending.\n\nRecommended Next Steps\n- Pending."
-        )
+        memo_text = "Background\nSummary pending.\n\nKey Facts\n- Pending.\n\nLegal Issues\n- Pending.\n\nAnalysis\n- Pending.\n\nPros\n- Pending.\n\nCons\n- Pending.\n\nRisk and Exposure\n- Pending.\n\nRecommended Next Steps\n- Pending."
     yield _sse("memo", {"title": case_title or "Case Memo", "body": memo_text})
 
     yield _sse("done", {"sent": sent_flag})
