@@ -1,5 +1,4 @@
 {
-  "functions": "convex/",
   "generate": {
     "convexImports": true
   }
