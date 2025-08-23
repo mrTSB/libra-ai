@@ -13,6 +13,7 @@ const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/juno", label: "Juno" },
   { href: "/lexi", label: "Lexi" },
+  { href: "/sage", label: "Sage" },
   { href: "/juris", label: "Juris" },
   { href: "/about", label: "About" },
 ];

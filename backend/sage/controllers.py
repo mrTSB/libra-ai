@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+import uvicorn
 
-from .services import chat_request
-from .schemas import ChatBody
+from services import chat_request
+from schemas import ChatBody
 
 
 app = FastAPI(title="Sage API")
+
 
 @app.post("/sage/chat")
 def sage_chat(body: ChatBody):
@@ -22,7 +24,9 @@ def sage_chat(body: ChatBody):
             chat_id=body.chat_id,
             title=body.title or "",
         )
-        return StreamingResponse(stream_iter, media_type="text/plain", headers={"x-chat-id": chat_id})
+        return StreamingResponse(
+            stream_iter, media_type="text/plain", headers={"x-chat-id": chat_id}
+        )
 
     resp = chat_request(
         prompt=body.prompt,
@@ -34,3 +38,7 @@ def sage_chat(body: ChatBody):
         title=body.title,
     )
     return resp
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8002)

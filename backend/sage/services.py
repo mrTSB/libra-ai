@@ -5,13 +5,14 @@ import os
 from ai_sdk import openai, anthropic, generate_text, stream_text
 from convex import ConvexClient
 
-from .tools import web_search, add, get_time, rag_search
+from tools import web_search, add, get_time, rag_search
 
 logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 
 _convex_client: Optional[ConvexClient] = None
+
 
 def _get_convex_client() -> ConvexClient:
     global _convex_client
@@ -43,9 +44,13 @@ def chat_request(
     """
     # Select provider based on model name
     if model_name.startswith("claude") or model_name.startswith("anthropic"):
-        model = anthropic(model_name, temperature=temperature, api_key=os.getenv("ANTHROPIC_API_KEY"))
+        model = anthropic(
+            model_name, temperature=temperature, api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
     else:
-        model = openai(model_name, temperature=temperature, api_key=os.getenv("OPENAI_API_KEY"))
+        model = openai(
+            model_name, temperature=temperature, api_key=os.getenv("OPENAI_API_KEY")
+        )
 
     tools: List[Any] = [add, get_time, rag_search]
     if use_web_search:
@@ -63,7 +68,9 @@ def chat_request(
     if not chat_id:
         chat_id = convex_client.mutation("chats:createChat", {"title": title or ""})
     try:
-        history: List[Dict[str, Any]] = convex_client.query("chats:getMessages", {"chatId": chat_id, "limit": 1000})
+        history: List[Dict[str, Any]] = convex_client.query(
+            "chats:getMessages", {"chatId": chat_id, "limit": 1000}
+        )
     except Exception:
         logger.exception("chat_request: failed to fetch history")
         history = []
@@ -90,11 +97,15 @@ def chat_request(
     conversation_context = _format_history(history)
 
     full_prompt = (
-        (f"Conversation so far:\n{conversation_context}\n\n" if conversation_context else "")
+        (
+            f"Conversation so far:\n{conversation_context}\n\n"
+            if conversation_context
+            else ""
+        )
         + "IMPORTANT: Wrap every citation in <cite>{JSON}</cite> with compact JSON.\n"
         + "Use these strict formats so the frontend can parse reliably.\n\n"
-        + "Email citation JSON: {\"type\":\"email\",\"id\":\"<convex_id>\",\"subject\":\"<subject>\",\"date\":\"<ISO or raw>\",\"sender\":\"<email>\",\"quote\":\"<relevant excerpt>\"}\n"
-        + "Web citation JSON: {\"type\":\"web\",\"title\":\"<title>\",\"url\":\"<https_url>\",\"quote\":\"<relevant excerpt>\"}\n\n"
+        + 'Email citation JSON: {"type":"email","id":"<convex_id>","subject":"<subject>","date":"<ISO or raw>","sender":"<email>","quote":"<relevant excerpt>"}\n'
+        + 'Web citation JSON: {"type":"web","title":"<title>","url":"<https_url>","quote":"<relevant excerpt>"}\n\n'
         + "RAG (internal emails): Call rag_search, distill to 3–6 word phrase, get exactly 3 docs. "
         + "Respond with: one short paragraph summarizing the answer using the 3 docs, with inline <cite>…</cite> where appropriate; "
         + "then exactly three bullets, each ending with a <cite>{email JSON}</cite>. Do not add extra fields.\n\n"
@@ -104,6 +115,7 @@ def chat_request(
     )
 
     if stream:
+
         async def generator():
             assistant_text_parts: List[str] = []
             try:
@@ -127,7 +139,10 @@ def chat_request(
                         {"chatId": chat_id, "role": "assistant", "content": final_text},
                     )
                 except Exception:
-                    logger.exception("chat_request: failed to persist assistant message (stream)")
+                    logger.exception(
+                        "chat_request: failed to persist assistant message (stream)"
+                    )
+
         return generator(), chat_id
 
     res = generate_text(
@@ -146,21 +161,28 @@ def chat_request(
     try:
         convex_client.mutation(
             "chats:addMessage",
-            {"chatId": chat_id, "role": "assistant", "content": getattr(res, "text", "") or ""},
+            {
+                "chatId": chat_id,
+                "role": "assistant",
+                "content": getattr(res, "text", "") or "",
+            },
         )
     except Exception:
         logger.exception("chat_request: failed to persist assistant message")
 
     # Return updated history
     try:
-        messages = convex_client.query("chats:getMessages", {"chatId": chat_id, "limit": 1000})
+        messages = convex_client.query(
+            "chats:getMessages", {"chatId": chat_id, "limit": 1000}
+        )
     except Exception:
         logger.exception("chat_request: failed to refetch messages")
         messages = history
 
     # Shape to minimal history format
-    history_min = [{"role": m.get("role", "user"), "content": m.get("content", "")} for m in messages]
+    history_min = [
+        {"role": m.get("role", "user"), "content": m.get("content", "")}
+        for m in messages
+    ]
 
     return {"chat_id": chat_id, "messages": history_min}
-
-
