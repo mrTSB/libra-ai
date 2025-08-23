@@ -18,7 +18,7 @@ const navigationLinks = [
 
 export default function Component() {
   return (
-    <header className="px-4 md:px-6 bg-gradient-to-b from-primary/10 to-transparent">
+    <header className="px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
         {/* Left side */}
         <div className="flex items-center gap-2">

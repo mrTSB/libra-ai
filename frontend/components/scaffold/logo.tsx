@@ -44,14 +44,14 @@ export function LogoIcon() {
         <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
           <g id="Frame-Copy" transform="translate(-195, -183)" xlinkHref="#path-p0gm_2xvw0-1">
             <use
-              fill="black"
+              fill="currentColor"
               fill-opacity="1"
               filter="url(#filter-p0gm_2xvw0-2)"
               xlinkHref="#path-p0gm_2xvw0-1"
             ></use>
             <path
               stroke-opacity="0.150267701"
-              stroke="#3B3C36"
+              stroke="currentColor"
               stroke-width="5"
               d="M1604,2.5 C1674.00209,2.5 1737.37709,30.873954 1783.25157,76.748431 C1829.12605,122.622908 1857.5,185.997908 1857.5,256 C1857.5,326.002092 1829.12605,389.377092 1783.25157,435.251569 C1737.37709,481.126046 1674.00209,509.5 1604,509.5 L256,509.5 C185.997908,509.5 122.622908,481.126046 76.748431,435.251569 C30.873954,389.377092 2.5,326.002092 2.5,256 C2.5,185.997908 30.873954,122.622908 76.748431,76.748431 C122.622908,30.873954 185.997908,2.5 256,2.5 Z"
               stroke-linejoin="square"
@@ -60,7 +60,7 @@ export function LogoIcon() {
               <g
                 id="Group"
                 transform="translate(56.2675, 14.0704)"
-                stroke="#3B3C36"
+                stroke="currentColor"
                 stroke-width="8.0901821"
               >
                 <path
@@ -97,7 +97,7 @@ export function LogoIcon() {
                   stroke-linecap="round"
                 ></path>
               </g>
-              <g id="Capa_1" fill="#3B3C36" fill-rule="nonzero">
+              <g id="Capa_1" fill="currentColor" fill-rule="nonzero">
                 <g
                   id="Group"
                   transform="translate(29.5598, 63.0464) scale(1, -1) translate(-29.5598, -63.0464)"
@@ -204,7 +204,7 @@ export function LogoIcon() {
 
 export function LogoText() {
   return (
-    <div className="text-2xl font-serif tracking-tight flex items-center gap-2">
+    <div className="text-2xl font-serif tracking-tight flex items-center gap-2 text-foreground">
       <LogoIcon />
       Libra
     </div>

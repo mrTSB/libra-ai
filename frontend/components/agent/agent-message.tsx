@@ -33,7 +33,7 @@ const renderMessagePart = (part: any, key: string | number) => {
     return <Markdown key={key}>{part.text}</Markdown>;
   } else if (part.type === "reasoning") {
     return (
-      <Markdown key={key} className="text-sm text-muted-foreground">
+      <Markdown key={key} size="sm" className="text-sm text-muted-foreground mt-0.5">
         {part.text}
       </Markdown>
     );
@@ -62,7 +62,7 @@ export function Message({ message, className }: { message: UIMessage; className?
 
   return (
     <div className={cn("flex items-start gap-3", className)}>
-      <div className={cn("flex flex-col gap-1 relative")}>
+      <div className={cn("flex flex-col gap-1 relative text-sm")}>
         <ChatReasoning
           renderMessagePart={renderMessagePart}
           partsInAccordion={partsInAccordion}
@@ -85,7 +85,6 @@ export default function AgentMessage({
 }) {
   return (
     <div className={cn("space-y-2 my-2", className)}>
-      <Thought duration={thoughtDuration} />
       <Message message={message} />
       <Diff
         className="mt-2"
