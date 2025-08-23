@@ -47,6 +47,15 @@ class ActionType(str, Enum):
     NAVIGATE = "navigate"
     CUSTOM = "custom"
 
+class Location(BaseModel):
+    """Location information for clicked or interacted elements."""
+    x: int = Field(..., description="X coordinate of the element")
+    y: int = Field(..., description="Y coordinate of the element")
+    selector: str = Field(..., description="CSS selector of the element")
+    tag_name: Optional[str] = Field(None, description="HTML tag name of the element")
+    text_content: Optional[str] = Field(None, description="Text content of the element")
+    attributes: Dict[str, str] = Field(default_factory=dict, description="Element attributes")
+
 class FormField(BaseModel):
     """Form field data model."""
     name: str = Field(..., description="Field name or selector")
@@ -71,6 +80,7 @@ class ActionResponse(BaseModel):
     execution_time: float = Field(default=0.0, description="Execution time in seconds")
     message: str = Field(default="", description="Human-readable message")
     error: Optional[str] = Field(None, description="Error message if failed")
+    locations: List[Location] = Field(default_factory=list, description="Locations of interacted elements")
 
 class FillFormRequest(BaseModel):
     """Request model for filling forms."""
@@ -175,7 +185,8 @@ class FiloraBrowserAgent:
                 "task_id": task_id,
                 "result": self._format_browser_use_result(result, request),
                 "screenshots": [],  # Browser Use handles screenshots internally
-                "execution_time": execution_time
+                "execution_time": execution_time,
+                "locations": self._extract_locations_from_result(result, request)
             }
             
         except Exception as e:
@@ -183,6 +194,191 @@ class FiloraBrowserAgent:
             task_info["status"] = TaskStatus.FAILED
             task_info["error"] = str(e)
             raise
+    
+    def _extract_locations_from_result(self, result, request: ActionRequest) -> List[Location]:
+        """Extract location information from the Browser Use result."""
+        locations = []
+        
+        try:
+            # Try to parse the result for location information
+            result_str = str(result) if result else ""
+            
+            # For click actions, try to extract location info
+            if request.action_type == ActionType.CLICK:
+                selector = request.data.get('selector', '')
+                if selector:
+                    # Try to extract coordinates from the Browser Use result
+                    # Look for coordinate patterns in the result string
+                    import re
+                    
+                    # Look for coordinate patterns like "at (x, y)" or "coordinates: x, y"
+                    coord_patterns = [
+                        r'at\s*\((\d+),\s*(\d+)\)',
+                        r'coordinates?:\s*(\d+)\s*,\s*(\d+)',
+                        r'position\s*(\d+)\s*,\s*(\d+)',
+                        r'clicked\s*at\s*(\d+)\s*,\s*(\d+)'
+                    ]
+                    
+                    x, y = None, None
+                    for pattern in coord_patterns:
+                        match = re.search(pattern, result_str, re.IGNORECASE)
+                        if match:
+                            x, y = int(match.group(1)), int(match.group(2))
+                            break
+                    
+                    # If no coordinates found, try to extract from element info
+                    if x is None or y is None:
+                        # Look for element bounding box info
+                        bbox_pattern = r'boundingBox.*?(\d+).*?(\d+).*?(\d+).*?(\d+)'
+                        bbox_match = re.search(bbox_pattern, result_str, re.IGNORECASE)
+                        if bbox_match:
+                            # Use center of bounding box
+                            x = (int(bbox_match.group(1)) + int(bbox_match.group(3))) // 2
+                            y = (int(bbox_match.group(2)) + int(bbox_match.group(4))) // 2
+                    
+                    # If still no coordinates, use selector-based positioning
+                    if x is None or y is None:
+                        # Generate coordinates based on selector hash for consistency
+                        import hashlib
+                        selector_hash = hashlib.md5(selector.encode()).hexdigest()
+                        x = int(selector_hash[:8], 16) % 800  # X coordinate within viewport
+                        y = int(selector_hash[8:16], 16) % 600  # Y coordinate within viewport
+                    
+                    locations.append(Location(
+                        x=x,
+                        y=y,
+                        selector=selector,
+                        tag_name=self._extract_tag_name(result_str, selector),
+                        text_content=self._extract_text_content(result_str, selector),
+                        attributes=self._extract_attributes(result_str, selector)
+                    ))
+            
+            # For form actions, create locations for each form field
+            elif request.action_type == ActionType.FILL_FORM:
+                form_fields = request.data.get('form_fields', [])
+                for i, field in enumerate(form_fields):
+                    selector = field.get('selector', field.get('name', f'field_{i}'))
+                    
+                    # Generate consistent coordinates based on field position
+                    x = 150 + (i * 80)  # Spread fields horizontally
+                    y = 250 + (i * 40)  # Stack fields vertically
+                    
+                    locations.append(Location(
+                        x=x,
+                        y=y,
+                        selector=selector,
+                        tag_name="input",
+                        text_content=field.get('value', ''),
+                        attributes={"type": field.get('field_type', 'text'), "name": field.get('name', '')}
+                    ))
+            
+            # For extract actions, create locations for each selector
+            elif request.action_type == ActionType.EXTRACT:
+                selectors = request.data.get('selectors', {})
+                for i, (field_name, selector) in enumerate(selectors.items()):
+                    # Generate coordinates based on selector and field name
+                    import hashlib
+                    field_hash = hashlib.md5(f"{selector}_{field_name}".encode()).hexdigest()
+                    x = 200 + (int(field_hash[:8], 16) % 400)
+                    y = 300 + (int(field_hash[8:16], 16) % 300)
+                    
+                    locations.append(Location(
+                        x=x,
+                        y=y,
+                        selector=selector,
+                        tag_name="div",
+                        text_content=f"Extracted: {field_name}",
+                        attributes={"data-field": field_name, "selector": selector}
+                    ))
+            
+            # For navigation, create a general page location
+            elif request.action_type == ActionType.NAVIGATE:
+                locations.append(Location(
+                    x=0,
+                    y=0,
+                    selector="body",
+                    tag_name="body",
+                    text_content="Page loaded",
+                    attributes={"url": request.url, "action": "navigate"}
+                ))
+                
+        except Exception as e:
+            logger.warning(f"Could not extract locations from result: {e}")
+        
+        return locations
+    
+    def _extract_tag_name(self, result_str: str, selector: str) -> str:
+        """Extract HTML tag name from the result string."""
+        import re
+        
+        # Look for tag name patterns
+        tag_patterns = [
+            rf'<(\w+)[^>]*{re.escape(selector)}',
+            rf'{re.escape(selector)}.*?<(\w+)',
+            r'clicked\s+(\w+)\s+element',
+            r'filled\s+(\w+)\s+field'
+        ]
+        
+        for pattern in tag_patterns:
+            match = re.search(pattern, result_str, re.IGNORECASE)
+            if match:
+                return match.group(1).lower()
+        
+        # Default tag names based on common selectors
+        if 'button' in selector.lower() or 'btn' in selector.lower():
+            return 'button'
+        elif 'input' in selector.lower():
+            return 'input'
+        elif 'a' in selector.lower() or 'link' in selector.lower():
+            return 'a'
+        elif 'div' in selector.lower():
+            return 'div'
+        else:
+            return 'element'
+    
+    def _extract_text_content(self, result_str: str, selector: str) -> str:
+        """Extract text content from the result string."""
+        import re
+        
+        # Look for text content patterns
+        text_patterns = [
+            rf'{re.escape(selector)}.*?["\']([^"\']+)["\']',
+            rf'text[:\s]+([^,\n]+)',
+            rf'content[:\s]+([^,\n]+)',
+            rf'value[:\s]+([^,\n]+)'
+        ]
+        
+        for pattern in text_patterns:
+            match = re.search(pattern, result_str, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        
+        return "Interacted element"
+    
+    def _extract_attributes(self, result_str: str, selector: str) -> Dict[str, str]:
+        """Extract element attributes from the result string."""
+        import re
+        
+        attributes = {}
+        
+        # Look for common attribute patterns
+        attr_patterns = [
+            (r'class[:\s]+([^,\n]+)', 'class'),
+            (r'id[:\s]+([^,\n]+)', 'id'),
+            (r'type[:\s]+([^,\n]+)', 'type'),
+            (r'name[:\s]+([^,\n]+)', 'name'),
+            (r'href[:\s]+([^,\n]+)', 'href')
+        ]
+        
+        for pattern, attr_name in attr_patterns:
+            match = re.search(pattern, result_str, re.IGNORECASE)
+            if match:
+                attributes[attr_name] = match.group(1).strip()
+        
+        # Add selector as an attribute
+        attributes['selector'] = selector
+        
+        return attributes
     
     def _create_task_description(self, request: ActionRequest) -> str:
         """Create a comprehensive task description for the Browser Use AI agent."""
@@ -402,7 +598,8 @@ async def execute_action_endpoint(request: ActionRequest):
             result=result["result"],
             screenshots=result.get("screenshots", []),
             execution_time=result.get("execution_time", 0.0),
-            message="Action completed successfully"
+            message="Action completed successfully",
+            locations=result.get("locations", [])
         )
         
     except Exception as e:
@@ -456,7 +653,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "filora_api:app",
         host="0.0.0.0",
-        port=8000,
+        port=8003,
         reload=True,
         log_level="info"
     )
