@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/juno", label: "Juno" },
-  { href: "/lexi", label: "Pricing" },
+  { href: "/lexi", label: "Lexi" },
   { href: "/about", label: "About" },
 ];
 

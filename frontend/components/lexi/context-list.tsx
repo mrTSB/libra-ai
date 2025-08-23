@@ -20,7 +20,7 @@ function LocalList({ items }: { items: LexiLocalContext[] }) {
           <AccordionItem key={idx} value={`local-${idx}`}>
             <AccordionTrigger className="text-sm hover:no-underline cursor-pointer">
               <div className="flex flex-col items-start">
-                <span className="font-medium">{item.summary ?? item.title}</span>
+                <span className="font-medium line-clamp-2">{item.summary ?? item.title}</span>
                 <span className="text-xs text-muted-foreground">
                   {item.source === "basic-laws-book-2016" ? "Basic Laws" : "The Rule of Law"}• chunk{" "}
                   score {item.relevance_score ?? "–"}

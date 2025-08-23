@@ -40,10 +40,10 @@ export default function LexiPage() {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.25, delay: 0.25 }}
-            className="px-4 pt-4 pb-2 w-full"
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="px-4 pt-4 w-full"
           >
-            <h2 className="text-5xl font-semibold font-serif tracking-tight truncate">
+            <h2 className="text-5xl font-semibold font-serif tracking-tight truncate pb-2">
               {submittedQuestion}
             </h2>
           </motion.div>
@@ -55,7 +55,7 @@ export default function LexiPage() {
           initial={{ y: -20, opacity: 0, filter: "blur(10px)" }}
           animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
           exit={{ y: 20, opacity: 0, filter: "blur(10px)" }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.5 }}
           className="w-full"
         >
           {!submittedQuestion && !loading && (

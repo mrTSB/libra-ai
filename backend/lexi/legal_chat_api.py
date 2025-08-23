@@ -6,13 +6,12 @@ local document embeddings, and Exa web search.
 """
 
 import os
-import pickle
 import logging
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import anthropic
@@ -108,18 +107,9 @@ class LegalChatService:
 
     def __init__(self):
         self.max_context_length = 15000  # Characters for context
-        self.system_prompt = """You are a highly knowledgeable legal expert and assistant. You provide accurate, helpful legal information based on the context provided from legal documents and current web sources.
+        self.system_prompt = """You are a highly knowledgeable legal assistant.
 
-IMPORTANT GUIDELINES:
-1. Always base your answers on the provided context when available
-2. Be precise and cite specific legal principles, statutes, or cases when referenced in the context
-3. If the context doesn't contain sufficient information, clearly state this limitation
-4. Provide practical, actionable legal guidance while noting when professional legal counsel is recommended
-5. Distinguish between general legal principles and jurisdiction-specific laws
-6. Use clear, professional language that's accessible to non-lawyers
-7. When appropriate, reference the specific sources provided in your answer
-
-DISCLAIMER: Always remind users that this is informational guidance and not substitute for professional legal advice for specific situations."""
+Write a single, cohesive paragraph that directly answers the user's question using only the provided CONTEXT. Do not include citations, lists, headings, or references; use neutral, clear prose similar to the concise summary shown at the top of a Google Search result. If the context is insufficient, note the specific missing information in the same paragraph. Keep it 3–6 sentences, accurate, and accessible to non-lawyers. Always end the paragraph with: This is informational and not legal advice."""
 
     async def get_local_context(
         self, query: str, max_results: int = 5
@@ -233,14 +223,15 @@ DISCLAIMER: Always remind users that this is informational guidance and not subs
     async def generate_legal_response(self, query: str, context: str) -> str:
         """Generate legal response using Claude Sonnet 3.5."""
         try:
-            prompt = f"""Based on the following context from legal documents and web sources, please answer this legal question:
+            prompt = f"""You will receive LOCAL and WEB sources.
 
-QUESTION: {query}
+USER QUESTION:
+{query}
 
 CONTEXT:
 {context}
 
-Please provide a comprehensive, accurate answer based on the context provided. If the context is insufficient, please note what additional information would be helpful."""
+Write a single-paragraph summary that answers the question. No citations, no lists, no headings, no references. If context is insufficient, state what is missing within the same paragraph. End with the exact sentence: This is informational and not legal advice."""
 
             message = anthropic_client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -254,6 +245,80 @@ Please provide a comprehensive, accurate answer based on the context provided. I
             logger.error(f"Error generating response with Claude: {e}")
             return "I apologize, but I encountered an error while processing your legal question. Please try again or consult with a qualified legal professional."
 
+    async def summarize_local_context(
+        self, local_context: List[Dict[str, Any]]
+    ) -> List[str]:
+        """Summarize each local chunk into a single sentence via LLM.
+
+        Returns a list of summaries aligned with the order of local_context.
+        """
+        if not local_context:
+            return []
+
+        try:
+            # Build compact input to control token usage
+            items = []
+            for idx, ctx in enumerate(local_context, start=1):
+                content = ctx.get("content", "")
+                # Limit each chunk content to keep prompt size manageable
+                trimmed = content[:800]
+                title = ctx.get("title", f"Local Chunk {idx}")
+                items.append(
+                    {
+                        "id": idx,
+                        "title": title,
+                        "text": trimmed,
+                    }
+                )
+
+            instruction = (
+                "You will receive a list of local legal text chunks. "
+                "For each item, produce a single-sentence summary (max 30 words) capturing the key legal point(s). "
+                "Return ONLY valid JSON array of objects with fields id and summary, no prose."
+            )
+
+            import json as _json
+
+            prompt = f"{instruction}\n\nITEMS AS JSON ARRAY:\n{_json.dumps(items, ensure_ascii=False)}"
+
+            message = anthropic_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=800,
+                system=(
+                    "You are a precise assistant that returns strict JSON. "
+                    "Never include comments or explanations outside JSON."
+                ),
+                messages=[{"role": "user", "content": prompt}],
+            )
+
+            raw = message.content[0].text.strip()
+
+            summaries: List[str] = [""] * len(local_context)
+            try:
+                import json as _json
+
+                data = _json.loads(raw)
+                if isinstance(data, list):
+                    for obj in data:
+                        try:
+                            idx = int(obj.get("id")) - 1
+                            if 0 <= idx < len(summaries):
+                                summaries[idx] = str(obj.get("summary", "")).strip()
+                        except Exception:
+                            continue
+            except Exception:
+                # Fallback: take first sentence-ish from each content
+                for i, ctx in enumerate(local_context):
+                    txt = ctx.get("content", "")
+                    period = txt.find(".")
+                    candidate = txt[: period + 1] if period != -1 else txt[:120]
+                    summaries[i] = candidate.strip()
+
+            return summaries
+        except Exception as e:
+            logger.error(f"Error summarizing local context: {e}")
+            return [""] * len(local_context)
+
     async def process_legal_query(self, query: LegalQuery) -> LegalResponse:
         """Process a legal query with RAG and web search."""
         logger.info(f"Processing legal query: {query.question[:100]}...")
@@ -266,6 +331,14 @@ Please provide a comprehensive, accurate answer based on the context provided. I
             local_context = await self.get_local_context(
                 query.question, max_results=query.max_local_results
             )
+            # Summarize local chunks (one-sentence) for frontend consumption
+            try:
+                summaries = await self.summarize_local_context(local_context)
+                for i, summ in enumerate(summaries):
+                    if i < len(local_context):
+                        local_context[i]["summary"] = summ
+            except Exception as e:
+                logger.warning(f"Local summaries unavailable: {e}")
 
         if query.use_web_search:
             web_context = await self.get_web_context(
@@ -288,6 +361,9 @@ Please provide a comprehensive, accurate answer based on the context provided. I
                     "source": ctx["source"],
                     "content": ctx["content"],
                     "relevance_score": ctx.get("relevance_score"),
+                    "summary": ctx.get("summary")
+                    if ctx.get("type") == "local"
+                    else None,
                 }
             )
 

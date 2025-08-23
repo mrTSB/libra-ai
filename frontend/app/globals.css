@@ -48,7 +48,7 @@
 :root {
   --radius: 0.625rem;
   --background: var(--color-stone-50);
-  --foreground: var(--color-stone-900);
+  --foreground: var(--color-stone-800);
   --card: var(--color-white);
   --card-foreground: var(--color-stone-900);
   --popover: var(--color-white);
