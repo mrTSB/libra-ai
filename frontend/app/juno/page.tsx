@@ -175,6 +175,13 @@ export default function JunoPage() {
                     Upload a .txt or .md file to get started, or drag and drop it here.
                   </div>
                   <div className="flex items-center justify-center gap-2 mb-12">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".txt,.md,.markdown,text/plain,text/markdown"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
                     <Button size="sm" variant="fancy" onClick={() => fileInputRef.current?.click()}>
                       Upload document
                     </Button>

@@ -204,7 +204,7 @@ export function LogoIcon() {
 
 export function LogoText() {
   return (
-    <div className="text-2xl font-serif tracking-tight flex items-center gap-2 text-foreground">
+    <div className="text-2xl font-serif tracking-tight flex items-center gap-1 text-foreground">
       <LogoIcon />
       Libra
     </div>
