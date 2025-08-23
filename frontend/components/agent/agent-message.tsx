@@ -42,25 +42,14 @@ const renderMessagePart = (part: any, key: string | number) => {
 };
 
 export function Message({ message, className }: { message: UIMessage; className?: string }) {
-  if (message.role === "user") {
-    return (
-      <div className={cn(userMessageVariants({ variant: "message" }), className)}>
-        {message.parts.map((part) => part.type === "text" && part.text).join("")}
-      </div>
-    );
-  }
-
-  // Find the first text part to determine accordion boundary
   const firstTextIndex = message.parts.findIndex((part) => part.type === "text");
   const hasTextPart = firstTextIndex !== -1;
 
-  // Determine accordion state and content
   const shouldShowAccordion = firstTextIndex !== 0; // Show if first part is not text
   const accordionDefaultValue = !hasTextPart ? "reasoning" : undefined; // Open if no text parts
   const partsInAccordion = shouldShowAccordion ? message.parts.slice(0, firstTextIndex) : [];
   const partsAfter = hasTextPart ? message.parts.slice(firstTextIndex) : [];
 
-  // If no accordion needed (first part is text), render normally
   if (!shouldShowAccordion) {
     return (
       <div className={cn("flex items-start gap-3", className)}>

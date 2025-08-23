@@ -13,9 +13,7 @@ export async function POST(req: Request) {
     messages: convertToModelMessages(messages),
     providerOptions: {
       openai: {
-        reasoning: {
-          reasoningSummary: "auto",
-        },
+        reasoningSummary: "auto",
       },
     },
   });
