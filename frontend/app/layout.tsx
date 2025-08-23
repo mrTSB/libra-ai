@@ -34,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <div className="flex flex-col min-h-screen bg-gradient-to-t from-primary/5 to-transparent">
+        <div className="flex flex-col h-screen bg-gradient-to-t from-primary/5 to-transparent overflow-hidden">
           <Navbar />
           {children}
         </div>

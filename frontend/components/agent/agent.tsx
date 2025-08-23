@@ -35,7 +35,7 @@ export default function Agent({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn("flex flex-col gap-2 relative", className)}>
+    <div className={cn("flex flex-col gap-2 relative max-h-full overflow-y-auto", className)}>
       {messages.map((message) => {
         const text = getTextFromMessage(message as UIMessage);
         return message.role === "user" ? (
@@ -45,7 +45,7 @@ export default function Agent({ className }: { className?: string }) {
         );
       })}
       <ChatInput
-        className="absolute bottom-0 w-full "
+        className="sticky bottom-0 w-full"
         input={input}
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
