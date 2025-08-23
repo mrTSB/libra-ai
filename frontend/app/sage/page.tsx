@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { SageChatMessages } from "@/components/sage/chat-messages";
 import { postSageChat, type SageChatResponse, type SageMessage } from "@/lib/sage";
 import { SageComposer } from "@/components/sage/composer";
+import { SageChatSwitcher } from "@/components/sage/chat-switcher";
 import { cn } from "@/lib/utils";
 
 export default function SagePage() {
@@ -13,6 +14,7 @@ export default function SagePage() {
   const chatId = response?.chat_id || "";
   const [messages, setMessages] = useState<SageMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedChat, setSelectedChat] = useState<string | "new">("new");
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -26,6 +28,9 @@ export default function SagePage() {
     try {
       const res = await postSageChat(params);
       setResponse(res);
+      if (res.chat_id && selectedChat !== res.chat_id) {
+        setSelectedChat(res.chat_id);
+      }
       setMessages(res.messages);
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");
@@ -43,7 +48,7 @@ export default function SagePage() {
       model_name: "claude-sonnet-4-20250514",
       temperature: 0,
       stream: false,
-      chat_id: chatId,
+      chat_id: selectedChat !== "new" ? selectedChat : chatId,
       title: "",
     });
   }
@@ -51,6 +56,24 @@ export default function SagePage() {
   return (
     <div className="container mx-auto max-w-5xl p-4 space-y-2 overflow-y-auto flex flex-col min-h-0 flex-1 items-center justify-center w-full">
       {error && <div className="text-sm text-red-600">{error}</div>}
+      <div className="w-full flex items-center justify-end">
+        <SageChatSwitcher
+          value={selectedChat}
+          onChange={(v) => {
+            setSelectedChat(v);
+            // Reset view; if switching to existing chat, fetch its messages on next send
+            if (v === "new") {
+              setMessages([]);
+              setResponse(null);
+            } else {
+              // Immediately load selected chat by sending an empty prompt to fetch history is not ideal;
+              // so perform a lightweight history fetch by reusing chat endpoint with noop prompt? Backend doesn't support.
+              // We'll simply set the chatId and let next send continue the thread; optionally, we could add a GET chat messages later.
+              setMessages([]);
+            }
+          }}
+        />
+      </div>
 
       <div
         ref={scrollRef}

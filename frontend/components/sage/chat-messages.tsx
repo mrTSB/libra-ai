@@ -33,7 +33,7 @@ export function SageChatMessages({ messages, loading }: Props) {
       ))}
       {loading && (
         <div className="flex w-full justify-start">
-          <div className="max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm bg-muted text-foreground">
+          <div className="max-w-[80%] rounded-2xl px-4 py-3 text-sm bg-muted text-foreground">
             <span className="inline-flex items-center gap-1 text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]"></span>
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]"></span>
