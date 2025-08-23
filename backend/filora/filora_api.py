@@ -133,6 +133,17 @@ class ExtractDataRequest(BaseModel):
     instructions: Optional[str] = Field(None, description="Extraction instructions")
 
 
+class QueryRequest(BaseModel):
+    """Request model for natural language queries."""
+
+    query: str = Field(..., description="Natural language description of the task")
+    url: Optional[str] = Field(None, description="Target URL (optional, can be extracted from query)")
+    context: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional context or data for the task"
+    )
+    timeout: int = Field(default=30, description="Timeout in seconds")
+
+
 # ============================================================================
 # BROWSER AUTOMATION CLASS
 # ============================================================================
@@ -213,36 +224,34 @@ class FiloraBrowserAgent:
             agent = Agent(task=task_description)
 
             # Execute the task using Browser Use AI agent
-            step_screenshots: List[str] = []
-
-            async def on_step_start(agent_obj):
-                try:
-                    sc = await self._safe_take_screenshot(agent_obj)
-                    if sc:
-                        step_screenshots.append(sc)
-                except Exception as e:
-                    logger.warning(f"on_step_start screenshot failed: {e}")
-
-            async def on_step_end(agent_obj):
-                try:
-                    sc = await self._safe_take_screenshot(agent_obj)
-                    if sc:
-                        step_screenshots.append(sc)
-                except Exception as e:
-                    logger.warning(f"on_step_end screenshot failed: {e}")
-
-            result = await agent.run(
-                on_step_start=on_step_start, on_step_end=on_step_end
-            )
-
-            # Ensure we have at least a final screenshot even if hooks didn't capture any
+            result = await agent.run()
+            
+            # Capture screenshots from Browser Use agent
+            screenshots = []
             try:
-                sc_final = await self._safe_take_screenshot(agent)
-                if sc_final:
-                    step_screenshots.append(sc_final)
+                # Get screenshots from agent history - returns list[str | None]
+                raw_screenshots = agent.history.screenshots()
+                if raw_screenshots:
+                    # Filter out None values and convert to proper base64 format
+                    for screenshot in raw_screenshots:
+                        if screenshot is not None:  # Filter out None values
+                            converted = self._coerce_screenshot_to_base64(screenshot)
+                            if converted:
+                                screenshots.append(converted)
+                    logger.info(f"Captured {len(screenshots)} screenshots from {len(raw_screenshots)} total items")
+                else:
+                    logger.info("No screenshots available in agent history")
             except Exception as e:
-                logger.warning(f"final screenshot failed: {e}")
-
+                logger.warning(f"Could not capture screenshots from history: {e}")
+                # Fallback: try to take a current screenshot
+                try:
+                    current_screenshot = await self._safe_take_screenshot(agent)
+                    if current_screenshot:
+                        screenshots = [current_screenshot]
+                        logger.info("Captured fallback screenshot")
+                except Exception as fallback_e:
+                    logger.warning(f"Fallback screenshot also failed: {fallback_e}")
+            
             # Update task status
             execution_time = time.time() - start_time
             task_info["status"] = TaskStatus.COMPLETED
@@ -261,12 +270,12 @@ class FiloraBrowserAgent:
                         last = img
                 return deduped
 
-            step_screenshots = dedupe_images(step_screenshots)
+            screenshots = dedupe_images(screenshots)
 
             return {
                 "task_id": task_id,
                 "result": self._format_browser_use_result(result, request),
-                "screenshots": step_screenshots,
+                "screenshots": screenshots,
                 "execution_time": execution_time,
                 "locations": self._extract_locations_from_result(result, request),
             }
@@ -276,6 +285,192 @@ class FiloraBrowserAgent:
             task_info["status"] = TaskStatus.FAILED
             task_info["error"] = str(e)
             raise
+
+    async def execute_query(self, request: QueryRequest) -> Dict[str, Any]:
+        """Execute a natural language query using Browser Use AI agent."""
+        if not self.is_ready():
+            raise RuntimeError("Browser agent not initialized")
+
+        task_id = self._generate_task_id()
+        start_time = time.time()
+
+        # Create task info
+        task_info = {
+            "task_id": task_id,
+            "status": TaskStatus.IN_PROGRESS,
+            "created_at": datetime.now().isoformat(),
+            "action_type": "query",
+            "query": request.query,
+        }
+        self.tasks[task_id] = task_info
+
+        try:
+            logger.info(f"Executing natural language query: {request.query}")
+
+            # Parse the query to extract URL if not provided
+            url = request.url or self._extract_url_from_query(request.query)
+            
+            # Create the task description with enhanced context
+            task_description = self._create_dynamic_task_description(request, url)
+
+            # Create a new Agent for this task
+            agent = Agent(task=task_description)
+
+            # Execute the task using Browser Use AI agent
+            result = await agent.run()
+            
+            # Capture screenshots from Browser Use agent
+            screenshots = []
+            try:
+                # Get screenshots from agent history - returns list[str | None]
+                raw_screenshots = agent.history.screenshots()
+                if raw_screenshots:
+                    # Filter out None values and convert to proper base64 format
+                    for screenshot in raw_screenshots:
+                        if screenshot is not None:  # Filter out None values
+                            converted = self._coerce_screenshot_to_base64(screenshot)
+                            if converted:
+                                screenshots.append(converted)
+                    logger.info(f"Captured {len(screenshots)} screenshots from {len(raw_screenshots)} total items")
+                else:
+                    logger.info("No screenshots available in agent history")
+            except Exception as e:
+                logger.warning(f"Could not capture screenshots from history: {e}")
+                # Fallback: try to take a current screenshot
+                try:
+                    current_screenshot = await self._safe_take_screenshot(agent)
+                    if current_screenshot:
+                        screenshots = [current_screenshot]
+                        logger.info("Captured fallback screenshot")
+                except Exception as fallback_e:
+                    logger.warning(f"Fallback screenshot also failed: {fallback_e}")
+            
+            # Update task status
+            execution_time = time.time() - start_time
+            task_info["status"] = TaskStatus.COMPLETED
+            task_info["completed_at"] = datetime.now().isoformat()
+            task_info["result"] = result
+
+            # Deduplicate consecutive identical screenshots
+            def dedupe_images(images: List[str]) -> List[str]:
+                if not images:
+                    return []
+                deduped: List[str] = []
+                last: Optional[str] = None
+                for img in images:
+                    if img and img != last:
+                        deduped.append(img)
+                        last = img
+                return deduped
+
+            screenshots = dedupe_images(screenshots)
+
+            return {
+                "task_id": task_id,
+                "result": self._format_query_result(result, request, url),
+                "screenshots": screenshots,
+                "execution_time": execution_time,
+                "locations": self._extract_locations_from_query_result(result, request),
+            }
+
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
+            task_info["status"] = TaskStatus.FAILED
+            task_info["error"] = str(e)
+            raise
+
+    def _extract_url_from_query(self, query: str) -> str:
+        """Extract URL from natural language query."""
+        import re
+        
+        # Look for URLs in the query
+        url_patterns = [
+            r'https?://[^\s]+',
+            r'www\.[^\s]+',
+            r'[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?'
+        ]
+        
+        for pattern in url_patterns:
+            match = re.search(pattern, query, re.IGNORECASE)
+            if match:
+                url = match.group()
+                # Ensure protocol
+                if not url.startswith(('http://', 'https://')):
+                    url = 'https://' + url
+                return url
+        
+        # Default fallback
+        return "https://example.com"
+
+    def _create_dynamic_task_description(self, request: QueryRequest, url: str) -> str:
+        """Create a dynamic task description from natural language query."""
+        query = request.query
+        context = request.context
+        
+        # Enhanced task description that includes the URL and any context
+        task_description = f"Navigate to {url} and {query}."
+        
+        # Add context if provided
+        if context:
+            context_str = ", ".join([f"{k}: {v}" for k, v in context.items()])
+            task_description += f" Additional context: {context_str}."
+        
+        # Add some intelligent enhancement based on common patterns
+        if any(word in query.lower() for word in ['fill', 'form', 'enter', 'input']):
+            task_description += " Make sure to interact with form fields as needed."
+        
+        if any(word in query.lower() for word in ['click', 'button', 'link', 'press']):
+            task_description += " Look for clickable elements and interact with them appropriately."
+        
+        if any(word in query.lower() for word in ['extract', 'get', 'find', 'scrape', 'data']):
+            task_description += " Extract and return the relevant information from the page."
+        
+        if any(word in query.lower() for word in ['search', 'look for', 'find']):
+            task_description += " Use search functionality if available on the page."
+        
+        return task_description
+
+    def _format_query_result(self, result, request: QueryRequest, url: str) -> Dict[str, Any]:
+        """Format the Browser Use result for query execution."""
+        result_str = str(result) if result else "Task completed"
+        
+        return {
+            "success": True,
+            "action_type": "query",
+            "query": request.query,
+            "url": url,
+            "raw_result": result_str,
+            "message": f"Query executed successfully: {result_str}",
+            "context_used": request.context
+        }
+
+    def _extract_locations_from_query_result(self, result, request: QueryRequest) -> List[Location]:
+        """Extract location information from query execution result."""
+        locations = []
+        
+        try:
+            result_str = str(result) if result else ""
+            
+            # Create a general interaction location based on the query
+            # This is a simplified approach - in practice, Browser Use handles the specifics
+            location = Location(
+                x=400,  # Center of typical viewport
+                y=300,
+                selector="body",
+                tag_name="body",
+                text_content=f"Query: {request.query}",
+                attributes={
+                    "action": "query_execution",
+                    "query": request.query,
+                    "result": result_str[:100] + "..." if len(result_str) > 100 else result_str
+                }
+            )
+            locations.append(location)
+            
+        except Exception as e:
+            logger.warning(f"Could not extract locations from query result: {e}")
+        
+        return locations
 
     def _extract_locations_from_result(
         self, result, request: ActionRequest
@@ -594,33 +789,47 @@ class FiloraBrowserAgent:
     async def _safe_take_screenshot(self, agent_obj) -> Optional[str]:
         """Attempt multiple strategies to capture a screenshot and return base64."""
         try:
-            # 1) Preferred helper on browser_session
-            if hasattr(agent_obj, "browser_session") and hasattr(
-                agent_obj.browser_session, "take_screenshot"
-            ):
-                sc = await agent_obj.browser_session.take_screenshot()
-                if sc:
-                    coerced = self._coerce_screenshot_to_base64(sc)
-                    if coerced:
-                        return coerced
+            # 1) Try browser session screenshot method
+            if hasattr(agent_obj, "browser_session") and agent_obj.browser_session:
+                browser_session = agent_obj.browser_session
+                
+                # Try the take_screenshot method if available
+                if hasattr(browser_session, "take_screenshot"):
+                    try:
+                        sc = await browser_session.take_screenshot()
+                        if sc:
+                            coerced = self._coerce_screenshot_to_base64(sc)
+                            if coerced:
+                                return coerced
+                    except Exception as e:
+                        logger.debug(f"browser_session.take_screenshot failed: {e}")
+                
+                # Try to get the current page and take screenshot
+                if hasattr(browser_session, "get_current_page"):
+                    try:
+                        page = await browser_session.get_current_page()
+                        if page:
+                            sc_bytes = await page.screenshot(full_page=False)
+                            coerced = self._coerce_screenshot_to_base64(sc_bytes)
+                            if coerced:
+                                return coerced
+                    except Exception as e:
+                        logger.debug(f"page.screenshot failed: {e}")
+                
+                # Try direct page access if available
+                if hasattr(browser_session, "page") and browser_session.page:
+                    try:
+                        sc_bytes = await browser_session.page.screenshot(full_page=False)
+                        coerced = self._coerce_screenshot_to_base64(sc_bytes)
+                        if coerced:
+                            return coerced
+                    except Exception as e:
+                        logger.debug(f"direct page.screenshot failed: {e}")
+                        
         except Exception as e:
-            logger.debug(f"browser_session.take_screenshot failed: {e}")
+            logger.debug(f"All screenshot capture methods failed: {e}")
 
-        try:
-            # 2) Fallback to Playwright's Page.screenshot
-            if hasattr(agent_obj, "browser_session") and hasattr(
-                agent_obj.browser_session, "get_current_page"
-            ):
-                page = await agent_obj.browser_session.get_current_page()
-                if page:
-                    # bytes
-                    sc_bytes = await page.screenshot(full_page=False)
-                    coerced = self._coerce_screenshot_to_base64(sc_bytes)
-                    if coerced:
-                        return coerced
-        except Exception as e:
-            logger.debug(f"page.screenshot fallback failed: {e}")
-
+        logger.debug("No screenshot capture method succeeded")
         return None
 
     def _create_task_description(self, request: ActionRequest) -> str:
@@ -630,57 +839,91 @@ class FiloraBrowserAgent:
         data = request.data
         instructions = request.instructions or ""
 
+        # Enhanced task descriptions with more intelligent context
         if action_type == ActionType.FILL_FORM:
             form_fields = data.get("form_fields", [])
             submit = data.get("submit", True)
 
-            task = f"Navigate to {url} and fill out the form with the following information:\n"
+            task = f"Navigate to {url} and intelligently fill out the form. "
+            
+            if instructions:
+                task += f"Additional instructions: {instructions}. "
+            
+            task += "Fill the following fields:\n"
             for field in form_fields:
                 field_name = field.get("name", "")
                 field_value = field.get("value", "")
-                task += f"- Fill field '{field_name}' with value '{field_value}'\n"
+                field_type = field.get("field_type", "text")
+                task += f"- Field '{field_name}' (type: {field_type}) with value '{field_value}'\n"
 
             if submit:
-                task += "- Submit the form after filling all fields\n"
+                task += "- After filling all fields, locate and click the submit button\n"
             else:
-                task += "- Do not submit the form, just fill the fields\n"
-
+                task += "- Fill the fields but do not submit the form\n"
+            
+            task += "Be flexible with field selectors and adapt to the actual form structure on the page."
             return task
 
         elif action_type == ActionType.CLICK:
             selector = data.get("selector", "")
             description = data.get("description", "")
 
-            task = f"Navigate to {url} and click on the element"
+            task = f"Navigate to {url} and locate an element to click. "
+            
+            if instructions:
+                task += f"Instructions: {instructions}. "
+            
             if description:
-                task += f" described as '{description}'"
+                task += f"Look for an element described as '{description}'. "
             if selector:
-                task += f" with selector '{selector}'"
-            task += ". Make sure the element is visible and clickable before clicking."
+                task += f"Try using selector '{selector}' but be flexible if it doesn't work. "
+            
+            task += "Find the most appropriate clickable element that matches the description, ensure it's visible and clickable, then click it. "
+            task += "If the exact selector doesn't work, try to find a similar element based on the description."
 
             return task
 
         elif action_type == ActionType.EXTRACT:
             selectors = data.get("selectors", {})
 
-            task = f"Navigate to {url} and extract the following data:\n"
-            for field_name, selector in selectors.items():
-                task += f"- Extract '{field_name}' using selector '{selector}'\n"
-            task += "Return the extracted data in a structured format."
+            task = f"Navigate to {url} and extract data from the page. "
+            
+            if instructions:
+                task += f"Instructions: {instructions}. "
+            
+            if selectors:
+                task += "Extract the following information:\n"
+                for field_name, selector in selectors.items():
+                    task += f"- '{field_name}': Look for content using selector '{selector}' or similar elements\n"
+            else:
+                task += "Extract relevant data from the page based on the instructions provided.\n"
+            
+            task += "Be flexible with selectors and try to find the best matching elements. "
+            task += "Return the extracted data in a clear, structured format."
 
             return task
 
         elif action_type == ActionType.NAVIGATE:
             target_url = data.get("url", url)
-            task = f"Navigate to {target_url} and wait for the page to fully load."
+            task = f"Navigate to {target_url} and wait for the page to fully load. "
+            
+            if instructions:
+                task += f"Additional instructions: {instructions}. "
+            
+            task += "Ensure the page is completely loaded and ready for interaction."
             return task
 
         elif action_type == ActionType.CUSTOM:
-            task = f"Navigate to {url} and {instructions}"
+            task = f"Navigate to {url} and perform the following task: {instructions}. "
+            task += "Be intelligent and adaptive in your approach. "
+            task += "If specific selectors or methods don't work, try alternative approaches to accomplish the goal."
             return task
 
         else:
-            return f"Navigate to {url} and {instructions}"
+            # Fallback for any other action types
+            task = f"Navigate to {url} and {instructions if instructions else 'complete the requested task'}. "
+            task += "Use your best judgment to understand and complete the task based on the page content and structure."
+            return task
 
     def _format_browser_use_result(
         self, result, request: ActionRequest
@@ -918,6 +1161,34 @@ async def extract_data(request: ExtractDataRequest):
     )
 
     return await execute_action_endpoint(action_request)
+
+
+@app.post("/query", response_model=ActionResponse)
+async def execute_query_endpoint(request: QueryRequest):
+    """Execute a natural language query on a webpage."""
+    global browser_agent
+
+    if not browser_agent:
+        raise HTTPException(status_code=503, detail="Browser agent not initialized")
+
+    try:
+        result = await browser_agent.execute_query(request)
+
+        return ActionResponse(
+            task_id=result["task_id"],
+            status=TaskStatus.COMPLETED,
+            result=result["result"],
+            screenshots=result.get("screenshots", []),
+            execution_time=result.get("execution_time", 0.0),
+            message="Query executed successfully",
+            locations=result.get("locations", []),
+        )
+
+    except Exception as e:
+        logger.error(f"Error executing query: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Query execution failed: {str(e)}"
+        )
 
 
 # ============================================================================
