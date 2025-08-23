@@ -18,7 +18,7 @@ export default function Agent({
   paper?: string;
   setPaper?: (paper: string) => void;
 }) {
-  const { messages, sendMessage, error } = useChat({
+  const { messages, sendMessage, addToolResult, error } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
@@ -38,7 +38,10 @@ export default function Agent({
       role: "user",
       parts: [
         { type: "text", text },
-        { type: "text", text: `Current document content:\n${paper ?? ""}` },
+        {
+          type: "text",
+          text: `Current document content (fenced):\n\n\`\`\`text\n${paper ?? ""}\n\`\`\``,
+        },
       ],
     });
     setInput("");
@@ -60,10 +63,17 @@ export default function Agent({
             message={message}
             thoughtDuration={4}
             key={message.id}
-            onApplyDiff={({ oldText, newText }) => {
+            onApplyDiff={({ toolCallId, oldText, newText }) => {
               if (typeof setPaper === "function") {
                 // naive application: replace oldText with newText in the current paper
                 setPaper((paper ?? "").replace(oldText, newText));
+              }
+              if (toolCallId) {
+                addToolResult({
+                  tool: "write_diff",
+                  toolCallId,
+                  output: { applied: true },
+                });
               }
             }}
           />

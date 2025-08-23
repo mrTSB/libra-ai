@@ -50,7 +50,14 @@ const renderMessagePart = (part: any, key: string | number) => {
         case "output-available": {
           // We do not apply the diff; just show it. If the model produced output, prefer it.
           const { oldText, newText } = (part.output || part.input) ?? {};
-          return <Diff key={key} className="mt-2" oldText={oldText} newText={newText} />;
+          if (typeof oldText === "string" && typeof newText === "string") {
+            return <Diff key={key} className="mt-2" oldText={oldText} newText={newText} />;
+          }
+          return (
+            <div key={key} className="text-xs text-muted-foreground">
+              Diff output ready
+            </div>
+          );
         }
         case "output-error":
           return (
@@ -89,6 +96,44 @@ export function Message({
   const partsInAccordion = shouldShowAccordion ? message.parts.slice(0, firstTextIndex) : [];
   const partsAfter = hasTextPart ? message.parts.slice(firstTextIndex) : [];
 
+  // If there is no text part at all, render all parts directly to avoid hiding tools
+  if (!hasTextPart) {
+    return (
+      <div className={cn("flex items-start gap-3", className)}>
+        <div className={cn("flex flex-col gap-1 relative")}>
+          {message.parts.map((part, index) => {
+            if (
+              part.type === "tool-write_diff" &&
+              (part.state === "input-available" || part.state === "output-available")
+            ) {
+              const payload: any = part.output ?? part.input;
+              const oldText = typeof payload?.oldText === "string" ? payload.oldText : undefined;
+              const newText = typeof payload?.newText === "string" ? payload.newText : undefined;
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  {renderMessagePart(part, index)}
+                  {onApplyDiff && oldText && newText ? (
+                    <button
+                      className="text-xs px-2 py-1 border rounded-md hover:bg-muted"
+                      onClick={() => onApplyDiff({ toolCallId: part.toolCallId, oldText, newText })}
+                    >
+                      Apply changes
+                    </button>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-semibold">Tool</span> called
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return renderMessagePart(part, index);
+          })}
+        </div>
+      </div>
+    );
+  }
+
   if (!shouldShowAccordion) {
     return (
       <div className={cn("flex items-start gap-3", className)}>
@@ -108,7 +153,11 @@ export function Message({
                     >
                       Apply changes
                     </button>
-                  ) : null}
+                  ) : (
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-semibold">Tool</span> called
+                    </div>
+                  )}
                 </div>
               );
             }
@@ -143,7 +192,11 @@ export function Message({
                   >
                     Apply changes
                   </button>
-                ) : null}
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-semibold">Tool</span> called
+                  </div>
+                )}
               </div>
             );
           }
@@ -163,7 +216,7 @@ export default function AgentMessage({
   className?: string;
   message: UIMessage;
   thoughtDuration: number;
-  onApplyDiff?: (args: { oldText: string; newText: string }) => void;
+  onApplyDiff?: (args: { toolCallId: string; oldText: string; newText: string }) => void;
 }) {
   return (
     <div className={cn("space-y-2 my-2", className)}>

@@ -1,9 +1,6 @@
 import { openai } from "@ai-sdk/openai";
-import { convertToModelMessages, smoothStream, stepCountIs, streamText, tool, UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, tool, UIMessage } from "ai";
 import { z } from "zod";
-
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
@@ -11,16 +8,14 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openai("gpt-5-mini"),
     system:
-      "You are a helpful writing assistant. You have a file open in front of you. You can edit the file using the write_diff tool.",
+      "You are a helpful writing assistant. You have a file open in front of you. When proposing edits to the document, always call the write_diff tool with {oldText, newText}. oldText must be an exact substring of the provided 'Current document content'. Do not output the entire updated document; use the tool instead.",
     messages: convertToModelMessages(messages),
     providerOptions: {
       openai: {
         reasoningSummary: "auto",
       },
     },
-    experimental_transform: smoothStream({
-      delayInMs: 10,
-    }),
+    // keep streaming simple to ensure tool parts are emitted clearly
     tools: {
       write_diff: tool({
         description: "Edit the file using a diff.",
@@ -30,7 +25,7 @@ export async function POST(req: Request) {
         }),
       }),
     },
-    stopWhen: stepCountIs(10),
+    stopWhen: stepCountIs(20),
   });
 
   return result.toUIMessageStreamResponse();
