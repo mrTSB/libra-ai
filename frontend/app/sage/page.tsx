@@ -66,7 +66,7 @@ export default function SagePage() {
     setMessages((prev) => [...prev, { role: "user", content: prompt }]);
     await handleAsk({
       prompt,
-      use_web_search: false,
+      use_web_search: true,
       model_name: "claude-sonnet-4-20250514",
       temperature: 0,
       stream: false,
