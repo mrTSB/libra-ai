@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as agentRuns from "../agentRuns.js";
+import type * as chats from "../chats.js";
+import type * as documents from "../documents.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -25,6 +27,8 @@ import type * as agentRuns from "../agentRuns.js";
  */
 declare const fullApi: ApiFromModules<{
   agentRuns: typeof agentRuns;
+  chats: typeof chats;
+  documents: typeof documents;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
