@@ -78,7 +78,9 @@ export default function JunoPage() {
             className={`flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible max-w-2xl mx-auto relative`}
           >
             <div className="flex items-center justify-between w-full">
-              <div className="text-4xl font-serif tracking-tight">Document</div>
+              <div className="text-4xl font-serif font-bold text-stone-700 tracking-tight">
+                Juno
+              </div>
               {/* <div className="flex items-center gap-2">
                 <input
                   ref={fileInputRef}
@@ -192,7 +194,7 @@ export default function JunoPage() {
         <ResizableHandle className="bg-transparent p-2 w-4" />
         <ResizablePanel defaultSize={20}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
-            <div className="text-4xl font-serif tracking-tight">Juno Agent</div>
+            <div className="text-4xl font-serif tracking-tight">Agent</div>
             <Agent
               className="h-full w-full"
               paper={paper}
