@@ -27,6 +27,9 @@ export type JurisSearchResponse = {
   web_results_count: number;
   total_results: number;
   search_summary: string;
+  competition_summary?: string | null;
+  concept_image_url?: string | null;
+  concept_image_prompt?: string | null;
 };
 
 export async function postJurisSearch(body: JurisSearchRequest): Promise<JurisSearchResponse> {

@@ -6,6 +6,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import Markdown from "@/components/ui/markdown";
 
 type Props = {
   response: JurisSearchResponse | null;
@@ -43,16 +44,37 @@ function PatentItem({ item, index }: { item: JurisPatentResult; index: number })
 
 export function JurisResults({ response }: Props) {
   if (!response) return null;
-  const { similar_patents, search_summary, local_results_count, web_results_count } = response;
+  const {
+    similar_patents,
+    search_summary,
+    local_results_count,
+    web_results_count,
+    competition_summary,
+    concept_image_url,
+    concept_image_prompt,
+  } = response;
   return (
-    <div className="space-y-6 w-full">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-normal">
-            {search_summary} • {local_results_count} local • {web_results_count} web
-          </CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="space-y-6 w-full mx-4">
+      <div className="text-xs font-normal uppercase text-muted-foreground">
+        {search_summary} • {local_results_count} local • {web_results_count} web
+      </div>
+
+      <div>
+        {concept_image_url && (
+          <div className="float-right ml-4 mb-2 w-[40%]">
+            <img
+              src={concept_image_url}
+              alt="Concept rendering"
+              className="rounded-lg border bg-[#f5f5f4] object-contain w-full"
+            />
+          </div>
+        )}
+
+        {competition_summary && <Markdown>{competition_summary}</Markdown>}
+
+        {/* Ensure following content does not wrap around the floated image */}
+        <div className="clear-both" />
+      </div>
 
       <Accordion type="multiple" className="w-full">
         {similar_patents.map((item, idx) => (

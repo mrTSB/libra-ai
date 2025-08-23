@@ -23,9 +23,9 @@ function createComponents(size: MarkdownSize): Components {
     md: {
       p: "text-base",
       h1: "text-4xl",
-      h2: "text-3xl",
-      h3: "text-2xl",
-      h4: "text-xl",
+      h2: "text-2xl",
+      h3: "text-xl",
+      h4: "text-lg",
       h5: "text-lg",
       h6: "text-base",
       list: "text-base",
@@ -55,17 +55,15 @@ function createComponents(size: MarkdownSize): Components {
       <h1 className={cn(s.h1, "font-semibold tracking-tight mb-2 mt-2")}>{children}</h1>
     ),
     h2: ({ children }) => (
-      <h2
-        className={cn(s.h2, "font-semibold tracking-tight mt-2 mb-2 border-b border-border pb-2")}
-      >
-        {children}
-      </h2>
+      <h2 className={cn(s.h2, "font-medium tracking-tight mt-2 mb-2")}>{children}</h2>
     ),
     h3: ({ children }) => (
-      <h3 className={cn(s.h3, "font-semibold tracking-tight mt-2 mb-2")}>{children}</h3>
+      <h3 className={cn(s.h3, "font-medium tracking-tight mt-2 mb-2")}>{children}</h3>
     ),
     h4: ({ children }) => (
-      <h4 className={cn(s.h4, "font-semibold tracking-tight mt-3 mb-2")}>{children}</h4>
+      <h4 className={cn(s.h4, "font-semibold text-primary/80 tracking-tight mt-3 mb-2")}>
+        {children}
+      </h4>
     ),
     h5: ({ children }) => (
       <h5 className={cn(s.h5, "font-semibold tracking-tight mt-2 mb-1")}>{children}</h5>

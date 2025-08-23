@@ -66,7 +66,7 @@ export default function JurisPage() {
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {loading && (
-        <div className="space-y-6 w-full min-h-0 flex-1">
+        <div className="space-y-6 w-full min-h-0 flex-1 px-4">
           <div className="space-y-2">
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-6 w-full" />
