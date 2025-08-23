@@ -19,6 +19,7 @@ export default function ChatReasoning({
     key: string | number
   ) => React.ReactNode;
 }) {
+  console.log(partsInAccordion);
   return (
     <Accordion type="single" collapsible defaultValue={defaultValue}>
       <AccordionItem value="reasoning">

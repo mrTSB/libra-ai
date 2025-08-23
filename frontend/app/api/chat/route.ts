@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openai("gpt-5-mini"),
     system:
-      "You are a helpful writing assistant. You have a file open in front of you. When proposing edits to the document, always call the write_diff tool with {oldText, newText}. oldText must be an exact substring of the provided 'Current document content'. Do not output the entire updated document; use the tool instead.",
+      "You are a helpful writing assistant. You have a file open in front of you. When proposing edits to the document, always call the write_diff tool with {oldText, newText}. oldText must be an exact substring of the provided 'Current document content'. Do not output the entire updated document; use the tool instead. Use the function and do not claim you're done. Output as minimal of a diff as possible, don't rewrite the entire document.",
     messages: convertToModelMessages(messages),
     providerOptions: {
       openai: {

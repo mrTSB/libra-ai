@@ -8,6 +8,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import type { UIMessage } from "ai";
+import { Circle } from "lucide-react";
 
 export default function Agent({
   className,
@@ -18,7 +19,7 @@ export default function Agent({
   paper?: string;
   setPaper?: (paper: string) => void;
 }) {
-  const { messages, sendMessage, addToolResult, error } = useChat({
+  const { messages, sendMessage, addToolResult, error, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
@@ -53,7 +54,9 @@ export default function Agent({
   }
 
   return (
-    <div className={cn("flex flex-col gap-2 relative max-h-full overflow-y-auto", className)}>
+    <div
+      className={cn("flex flex-col gap-2 relative max-h-full overflow-y-auto h-full", className)}
+    >
       {messages.map((message) => {
         const text = getTextFromMessage(message as UIMessage);
         return message.role === "user" ? (
