@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 import uvicorn
 
-from services import chat_request
+from services import chat_request, get_chats_request, get_chat_request
 from schemas import ChatBody
 
 
@@ -49,3 +49,16 @@ def sage_get_chats(limit: int | None = Query(default=None, ge=1, le=1000)):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
+
+@app.get("/sage/get_chat")
+def sage_get_chat(chat_id: str = Query(...)):
+    try:
+        return get_chat_request(chat_id=chat_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8002)

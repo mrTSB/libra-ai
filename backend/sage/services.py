@@ -250,3 +250,37 @@ def get_chats_request(limit: int | None = None) -> Dict[str, Any]:
     ]
 
     return {"chats": normalized}
+
+
+def get_chat_request(chat_id: str) -> Dict[str, Any]:
+    """
+    Fetch a single chat's messages and title by id.
+
+    Returns { chat_id, title, messages: [{role, content}] }
+    """
+    convex_client = _get_convex_client()
+    # Fetch messages
+    try:
+        messages: List[Dict[str, Any]] = convex_client.query(
+            "chats:getMessages", {"chatId": chat_id, "limit": 1000}
+        )
+    except Exception:
+        logger.exception("get_chat_request: failed to fetch messages")
+        messages = []
+
+    history_min = [
+        {"role": m.get("role", "user"), "content": m.get("content", "")}
+        for m in messages
+    ]
+
+    # Fetch title
+    title: Optional[str] = None
+    try:
+        chat_obj = convex_client.query("chats:getChat", {"chatId": chat_id})
+        if isinstance(chat_obj, dict):
+            title = chat_obj.get("title")
+    except Exception:
+        logger.exception("get_chat_request: failed to fetch chat title")
+        title = None
+
+    return {"chat_id": chat_id, "title": title, "messages": history_min}

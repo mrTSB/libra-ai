@@ -59,3 +59,20 @@ export async function fetchSageChats(limit?: number): Promise<SageChatsList> {
   }
   return (await res.json()) as SageChatsList;
 }
+
+export async function fetchSageChat(chatId: string): Promise<SageChatResponse> {
+  const res = await fetch(`/api/sage/chat/${encodeURIComponent(chatId)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    let details: unknown;
+    try {
+      details = await res.json();
+    } catch {}
+    throw new Error(
+      `Fetch Sage chat failed: ${res.status} ${res.statusText}` +
+        (details ? ` - ${JSON.stringify(details)}` : "")
+    );
+  }
+  return (await res.json()) as SageChatResponse;
+}

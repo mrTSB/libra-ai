@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SageChatMessages } from "@/components/sage/chat-messages";
-import { postSageChat, type SageChatResponse, type SageMessage } from "@/lib/sage";
+import { fetchSageChat, postSageChat, type SageChatResponse, type SageMessage } from "@/lib/sage";
 import { SageComposer } from "@/components/sage/composer";
 import { SageChatSwitcher } from "@/components/sage/chat-switcher";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,28 @@ export default function SagePage() {
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, loading]);
+
+  useEffect(() => {
+    async function loadSelected() {
+      if (selectedChat && selectedChat !== "new") {
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await fetchSageChat(selectedChat);
+          setResponse(data);
+          setMessages(data.messages);
+        } catch (e: any) {
+          setError(e?.message ?? "Failed to load chat");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setResponse(null);
+        setMessages([]);
+      }
+    }
+    loadSelected();
+  }, [selectedChat]);
 
   async function handleAsk(params: Parameters<typeof postSageChat>[0]) {
     setLoading(true);
@@ -61,16 +83,6 @@ export default function SagePage() {
           value={selectedChat}
           onChange={(v) => {
             setSelectedChat(v);
-            // Reset view; if switching to existing chat, fetch its messages on next send
-            if (v === "new") {
-              setMessages([]);
-              setResponse(null);
-            } else {
-              // Immediately load selected chat by sending an empty prompt to fetch history is not ideal;
-              // so perform a lightweight history fetch by reusing chat endpoint with noop prompt? Backend doesn't support.
-              // We'll simply set the chatId and let next send continue the thread; optionally, we could add a GET chat messages later.
-              setMessages([]);
-            }
           }}
         />
       </div>
@@ -82,7 +94,7 @@ export default function SagePage() {
         {messages.length === 0 ? (
           <div className="grid place-items-center text-center text-muted-foreground">
             <div className="space-y-0">
-              <h1 className="text-9xl font-serif font-semibold  scale-110 text-transparent bg-clip-text bg-gradient-to-b from-stone-800 to-stone-800/40 pb-4 pl-4">
+              <h1 className="text-9xl font-serif font-semibold  scale-110 pt-4 text-transparent bg-clip-text bg-gradient-to-b from-stone-800 to-stone-800/40 pb-4 pl-4">
                 Sage
               </h1>
               <h3 className="text-4xl font-serif font-semibold italic text-muted-foreground/80 -mb-4">
