@@ -13,6 +13,7 @@ export type LexiLocalContext = {
   title: string;
   content: string;
   source: string;
+  summary: string | null;
   relevance_score: number | null;
   metadata: {
     chunk_index: number;

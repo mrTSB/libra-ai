@@ -32,7 +32,7 @@ export default function LexiPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl p-4 space-y-6 overflow-y-auto flex flex-col min-h-0 flex-1">
+    <div className="container mx-auto max-w-5xl p-4 space-y-2 overflow-y-auto flex flex-col min-h-0 flex-1 items-center justify-center w-full">
       <AnimatePresence>
         {submittedQuestion && (
           <motion.div
@@ -40,19 +40,34 @@ export default function LexiPage() {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="sticky top-0 z-10 -mt-4 -mx-4 px-4 pt-4 pb-2 bg-background/70 backdrop-blur border-b"
+            transition={{ duration: 0.25, delay: 0.25 }}
+            className="px-4 pt-4 pb-2 w-full"
           >
-            <h2 className="text-lg font-semibold truncate">{submittedQuestion}</h2>
+            <h2 className="text-5xl font-semibold font-serif tracking-tight truncate">
+              {submittedQuestion}
+            </h2>
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        <motion.div
+          key={submittedQuestion ? "submitted" : "not-submitted"}
+          initial={{ y: -20, opacity: 0, filter: "blur(10px)" }}
+          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+          exit={{ y: 20, opacity: 0, filter: "blur(10px)" }}
+          transition={{ duration: 0.25 }}
+          className="w-full"
+        >
+          {!submittedQuestion && !loading && (
+            <LexiChatForm onSubmit={handleAsk} loading={loading} />
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-      {!submittedQuestion && !loading && <LexiChatForm onSubmit={handleAsk} loading={loading} />}
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {loading && (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full min-h-0 flex-1">
           <div className="grid md:grid-cols-2 gap-4">
             {[0, 1, 2].map((i) => (
               <div key={i} className="space-y-2">
@@ -72,14 +87,12 @@ export default function LexiPage() {
       )}
 
       {!loading && response && (
-        <>
-          <Reveal index={0}>
+        <div className="space-y-6 w-full min-h-0 flex-1 items-start justify-start">
+          <Reveal>
             <LexiChatResponseView response={response} />
-          </Reveal>
-          <Reveal index={1}>
             <LexiContextList response={response} />
           </Reveal>
-        </>
+        </div>
       )}
     </div>
   );

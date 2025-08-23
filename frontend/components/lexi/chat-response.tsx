@@ -9,14 +9,8 @@ type Props = {
 export function LexiChatResponseView({ response }: Props) {
   if (!response) return null;
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Answer</CardTitle>
-        </CardHeader>
-
-        <Markdown>{response.answer || ""}</Markdown>
-      </Card>
+    <div className="space-y-4 px-4">
+      <Markdown>{response.answer || ""}</Markdown>
     </div>
   );
 }
