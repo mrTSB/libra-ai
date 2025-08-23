@@ -16,9 +16,18 @@ export interface ResearchSearch {
 }
 
 export default function JunoPage() {
-  const [paper, setPaper] = useState<string>("");
+  const [paper, setPaper] = useState<string>(`
+# The Role of Argumentative Essays in Idea Development
+
+Argumentative essays serve as structured spaces for evolving ideas. By requiring claims, evidence, and counterarguments, they transform ambiguous intuitions into defensible propositions that can be refined over time.
+
+In this paper, we explore how argumentative writing acts as an instrument for discovery rather than mere persuasion.
+
+Argumentative essays serve as structured spaces for evolving ideas. By requiring claims, evidence, and counterarguments, they transform ambiguous intuitions into defensible propositions that can be refined over time.
+
+`);
   return (
-    <div className="h-full w-full p-4 pt-2 flex-1 min-h-0 flex flex-col">
+    <div className="h-full w-full p-2 pt-2 flex-1 min-h-0 flex flex-col">
       <ResizablePanelGroup
         direction="horizontal"
         style={{ overflow: "visible" }}
@@ -34,7 +43,7 @@ export default function JunoPage() {
         <ResizablePanel defaultSize={10}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
             <div className="text-4xl font-serif tracking-tight">Juno Agent</div>
-            <Agent className="h-full w-full" />
+            <Agent className="h-full w-full" paper={paper} setPaper={setPaper} />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

@@ -28,7 +28,38 @@ import Markdown from "@/components/ui/markdown";
 // Helper function to render a single message part
 const renderMessagePart = (part: any, key: string | number) => {
   if (part.type.includes("tool")) {
-    return <div key={key}>Tool</div>;
+    if (part.type === "tool-write_diff") {
+      switch (part.state) {
+        case "input-streaming":
+          return (
+            <div key={key} className="text-xs text-muted-foreground">
+              Preparing diff preview...
+            </div>
+          );
+        case "input-available": {
+          const { oldText, newText } = part.input || {};
+          if (typeof oldText === "string" && typeof newText === "string") {
+            return <Diff key={key} className="mt-2" oldText={oldText} newText={newText} />;
+          }
+          return (
+            <div key={key} className="text-xs text-muted-foreground">
+              Diff input ready
+            </div>
+          );
+        }
+        case "output-available": {
+          // We do not apply the diff; just show it. If the model produced output, prefer it.
+          const { oldText, newText } = (part.output || part.input) ?? {};
+          return <Diff key={key} className="mt-2" oldText={oldText} newText={newText} />;
+        }
+        case "output-error":
+          return (
+            <div key={key} className="text-xs text-destructive">
+              Failed to render diff: {part.errorText}
+            </div>
+          );
+      }
+    }
   } else if (part.type === "text") {
     return <Markdown key={key}>{part.text}</Markdown>;
   } else if (part.type === "reasoning") {
@@ -38,10 +69,18 @@ const renderMessagePart = (part: any, key: string | number) => {
       </Markdown>
     );
   }
-  return null;
+  return <pre>{JSON.stringify(part, null, 2)}</pre>;
 };
 
-export function Message({ message, className }: { message: UIMessage; className?: string }) {
+export function Message({
+  message,
+  className,
+  onApplyDiff,
+}: {
+  message: UIMessage;
+  className?: string;
+  onApplyDiff?: (args: { toolCallId: string; oldText: string; newText: string }) => void;
+}) {
   const firstTextIndex = message.parts.findIndex((part) => part.type === "text");
   const hasTextPart = firstTextIndex !== -1;
 
@@ -54,7 +93,27 @@ export function Message({ message, className }: { message: UIMessage; className?
     return (
       <div className={cn("flex items-start gap-3", className)}>
         <div className={cn("flex flex-col gap-1 relative")}>
-          {message.parts.map((part, index) => renderMessagePart(part, index))}
+          {message.parts.map((part, index) => {
+            if (part.type === "tool-write_diff" && part.state === "output-available") {
+              const payload: any = part.output ?? part.input;
+              const oldText = typeof payload?.oldText === "string" ? payload.oldText : undefined;
+              const newText = typeof payload?.newText === "string" ? payload.newText : undefined;
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  {renderMessagePart(part, index)}
+                  {onApplyDiff && oldText && newText ? (
+                    <button
+                      className="text-xs px-2 py-1 border rounded-md hover:bg-muted"
+                      onClick={() => onApplyDiff({ toolCallId: part.toolCallId, oldText, newText })}
+                    >
+                      Apply changes
+                    </button>
+                  ) : null}
+                </div>
+              );
+            }
+            return renderMessagePart(part, index);
+          })}
         </div>
       </div>
     );
@@ -68,7 +127,28 @@ export function Message({ message, className }: { message: UIMessage; className?
           partsInAccordion={partsInAccordion}
           defaultValue={accordionDefaultValue}
         />
-        {partsAfter.map((part, index) => renderMessagePart(part, firstTextIndex + index))}
+        {partsAfter.map((part, index) => {
+          const key = firstTextIndex + index;
+          if (part.type === "tool-write_diff" && part.state === "output-available") {
+            const payload: any = part.output ?? part.input;
+            const oldText = typeof payload?.oldText === "string" ? payload.oldText : undefined;
+            const newText = typeof payload?.newText === "string" ? payload.newText : undefined;
+            return (
+              <div key={key} className="flex items-center gap-2">
+                {renderMessagePart(part, key)}
+                {onApplyDiff && oldText && newText ? (
+                  <button
+                    className="text-xs px-2 py-1 border rounded-md hover:bg-muted"
+                    onClick={() => onApplyDiff({ toolCallId: part.toolCallId, oldText, newText })}
+                  >
+                    Apply changes
+                  </button>
+                ) : null}
+              </div>
+            );
+          }
+          return renderMessagePart(part, key);
+        })}
       </div>
     </div>
   );
@@ -78,20 +158,16 @@ export default function AgentMessage({
   className,
   message,
   thoughtDuration,
+  onApplyDiff,
 }: {
   className?: string;
   message: UIMessage;
   thoughtDuration: number;
+  onApplyDiff?: (args: { oldText: string; newText: string }) => void;
 }) {
   return (
     <div className={cn("space-y-2 my-2", className)}>
-      <Message message={message} />
-      <Diff
-        className="mt-2"
-        oldText="However, a closer examination reveals that argumentative essays can be tools for intellectual exploration and even delaying definitive conclusions. This essay will argue that the very structure and demands of the argumentative essay inherently make it a superior placeholder for ideas that are still in development. Despite the common perception of an argumentative essay as a battle of wills, its purpose here is far more constructive: to create a robust foundation for future development."
-        newText="However, a closer examination reveals that argumentative essays can be tools for intellectual exploration and even delaying definitive conclusions. This essay will argue that the need for reasoned claims, evidence, and counterarguments inherently make it a superior placeholder for ideas that are still in development. Despite the common perception of an argumentative essay as a battle of wills, its purpose here is far more constructive: to create a robust foundation for future development."
-        lineRange={[24, 28]}
-      />
+      <Message message={message} onApplyDiff={onApplyDiff} />
     </div>
   );
 }

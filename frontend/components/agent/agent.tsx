@@ -5,11 +5,23 @@ import ChatInput from "@/components/agent/chat-input";
 import { cn } from "@/lib/utils";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import type { UIMessage } from "ai";
 
-export default function Agent({ className }: { className?: string }) {
-  const { messages, sendMessage } = useChat({});
+export default function Agent({
+  className,
+  paper,
+  setPaper,
+}: {
+  className?: string;
+  paper?: string;
+  setPaper?: (paper: string) => void;
+}) {
+  const { messages, sendMessage, error } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+  });
 
   const [input, setInput] = useState("");
 
@@ -24,7 +36,10 @@ export default function Agent({ className }: { className?: string }) {
     // v5: send a UI message with parts array
     void sendMessage({
       role: "user",
-      parts: [{ type: "text", text }],
+      parts: [
+        { type: "text", text },
+        { type: "text", text: `Current document content:\n${paper ?? ""}` },
+      ],
     });
     setInput("");
   }
@@ -41,9 +56,20 @@ export default function Agent({ className }: { className?: string }) {
         return message.role === "user" ? (
           <UserMessage message={text} key={message.id} />
         ) : (
-          <AgentMessage message={message} thoughtDuration={4} key={message.id} />
+          <AgentMessage
+            message={message}
+            thoughtDuration={4}
+            key={message.id}
+            onApplyDiff={({ oldText, newText }) => {
+              if (typeof setPaper === "function") {
+                // naive application: replace oldText with newText in the current paper
+                setPaper((paper ?? "").replace(oldText, newText));
+              }
+            }}
+          />
         );
       })}
+      {error && <div className="text-destructive">{error.message}</div>}
       <ChatInput
         className="sticky bottom-0 w-full"
         input={input}

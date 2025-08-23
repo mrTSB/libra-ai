@@ -1,5 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
+import Markdown from "@/components/ui/markdown";
 
 export default function Paper({
   className,
@@ -17,7 +18,7 @@ export default function Paper({
         className
       )}
     >
-      {paper}
+      <Markdown>{paper}</Markdown>
     </div>
   );
 }
