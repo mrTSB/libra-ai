@@ -5,10 +5,14 @@ export default function Diff({
   className,
   oldText,
   newText,
+  onApply,
+  toolCallId,
 }: {
   className?: string;
   oldText: string;
   newText: string;
+  onApply?: (args: { toolCallId?: string; oldText: string; newText: string }) => void;
+  toolCallId?: string;
 }) {
   const diff = diffChars(oldText, newText);
 
@@ -22,11 +26,21 @@ export default function Diff({
         className
       )}
     >
-      <div className="flex w-full flex-row justify-between border-b p-2 px-3 text-xs text-muted-foreground">
+      <div className="flex w-full flex-row items-center justify-between gap-2 border-b p-2 px-3 text-xs text-muted-foreground">
         <div>Lines</div>
-        <div>
-          <span className="text-constructive">+{addedCount}</span>{" "}
-          <span className="text-destructive">-{removedCount}</span> Hover to view old text
+        <div className="flex items-center gap-2">
+          <span>
+            <span className="text-constructive">+{addedCount}</span>{" "}
+            <span className="text-destructive">-{removedCount}</span> Hover to view old text
+          </span>
+          {onApply ? (
+            <button
+              className="ml-2 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+              onClick={() => onApply({ toolCallId, oldText, newText })}
+            >
+              Apply changes
+            </button>
+          ) : null}
         </div>
       </div>
       <div className="group relative min-h-0 flex-1 overflow-hidden bg-card p-2 py-0 font-serif text-sm">
