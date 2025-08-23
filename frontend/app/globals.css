@@ -26,6 +26,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-constructive: var(--constructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -61,6 +62,7 @@
   --accent: var(--color-stone-200);
   --accent-foreground: var(--color-stone-900);
   --destructive: var(--color-red-700);
+  --constructive: var(--color-green-700);
   --border: var(--color-stone-200);
   --input: var(--color-white);
   --ring: var(--color-stone-200);

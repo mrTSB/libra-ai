@@ -1,4 +1,4 @@
-import { Brain } from "lucide-react";
+import { Brain, Check } from "lucide-react";
 import Diff from "@/components/agent/diff";
 import { cn } from "@/lib/utils";
 
@@ -25,51 +25,108 @@ import {
 import ChatReasoning from "@/components/agent/chat-reasoning";
 import Markdown from "@/components/ui/markdown";
 
-// Helper function to render a single message part
-const renderMessagePart = (part: any, key: string | number) => {
-  if (part.type.includes("tool")) {
-    return <div key={key}>Tool</div>;
-  } else if (part.type === "text") {
-    return <Markdown key={key}>{part.text}</Markdown>;
-  } else if (part.type === "reasoning") {
-    return (
-      <Markdown key={key} size="sm" className="text-sm text-muted-foreground mt-0.5">
-        {part.text}
-      </Markdown>
-    );
-  }
-  return null;
-};
-
-export function Message({ message, className }: { message: UIMessage; className?: string }) {
-  const firstTextIndex = message.parts.findIndex((part) => part.type === "text");
+export function Message({
+  message,
+  className,
+  onApplyDiff,
+}: {
+  message: UIMessage;
+  className?: string;
+  onApplyDiff?: (args: { toolCallId?: string; oldText: string; newText: string }) => void;
+}) {
+  const parts = message.parts ?? [];
+  const firstTextIndex = parts.findIndex((part) => part.type === "text");
   const hasTextPart = firstTextIndex !== -1;
 
-  const shouldShowAccordion = firstTextIndex !== 0; // Show if first part is not text
-  const accordionDefaultValue = !hasTextPart ? "reasoning" : undefined; // Open if no text parts
-  const partsInAccordion = shouldShowAccordion ? message.parts.slice(0, firstTextIndex) : [];
-  const partsAfter = hasTextPart ? message.parts.slice(firstTextIndex) : [];
+  // Render a single message part (has access to onApplyDiff)
+  const renderMessagePart = (part: any, key: string | number) => {
+    console.log(JSON.stringify(part, null, 2));
+    if (part.type === "tool-write_diff") {
+      switch (part.state) {
+        case "input-streaming":
+          return (
+            <div key={key} className="text-xs text-muted-foreground">
+              Preparing diff preview...
+            </div>
+          );
+        case "input-available": {
+          const { oldText, newText } = part.input || {};
+          if (typeof oldText === "string" && typeof newText === "string") {
+            return (
+              <Diff
+                key={key}
+                className="mt-2"
+                oldText={oldText}
+                newText={newText}
+                toolCallId={(part as any).toolCallId}
+                onApply={onApplyDiff}
+              />
+            );
+          }
+          return (
+            <div key={key} className="text-xs text-muted-foreground">
+              Diff input ready
+            </div>
+          );
+        }
+        case "output-available": {
+          const payload: any = (part.output || part.input) ?? {};
+          const { oldText, newText } = payload;
+          if (typeof oldText === "string" && typeof newText === "string") {
+            return (
+              <Diff
+                key={key}
+                className="mt-2"
+                oldText={oldText}
+                newText={newText}
+                toolCallId={(part as any).toolCallId}
+                onApply={onApplyDiff}
+              />
+            );
+          }
+          return (
+            <div
+              key={key}
+              className="text-sm font-bold text-muted-foreground fill-muted-foreground flex items-center gap-1"
+            >
+              Applied diff <Check className="h-4 w-4" />
+            </div>
+          );
+        }
+        case "output-error":
+          return (
+            <div key={key} className="text-xs text-destructive">
+              Failed to render diff: {part.errorText}
+            </div>
+          );
+      }
+    } else if (part.type === "text") {
+      return <Markdown key={key}>{part.text}</Markdown>;
+    } else if (part.type === "reasoning") {
+      return (
+        <Markdown key={key} size="sm" className="text-sm text-muted-foreground mt-0.5">
+          {part.text}
+        </Markdown>
+      );
+    }
+    return <pre>{JSON.stringify(part, null, 2)}</pre>;
+  };
 
-  if (!shouldShowAccordion) {
-    return (
-      <div className={cn("flex items-start gap-3", className)}>
-        <div className={cn("flex flex-col gap-1 relative")}>
-          {message.parts.map((part, index) => renderMessagePart(part, index))}
-        </div>
-      </div>
-    );
-  }
+  const accordionDefaultValue = !hasTextPart ? "reasoning" : undefined; // Open if no text parts
+  const partsInAccordion = hasTextPart ? parts.slice(0, firstTextIndex) : parts;
+  const partsAfter = hasTextPart ? parts.slice(firstTextIndex) : [];
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <div className={cn("flex flex-col gap-1 relative text-sm")}>
-        <ChatReasoning
-          renderMessagePart={renderMessagePart}
-          partsInAccordion={partsInAccordion}
-          defaultValue={accordionDefaultValue}
-        />
-        {partsAfter.map((part, index) => renderMessagePart(part, firstTextIndex + index))}
-      </div>
+    <div className={cn("flex flex-col gap-1 relative text-sm w-full")}>
+      <ChatReasoning
+        renderMessagePart={renderMessagePart}
+        partsInAccordion={partsInAccordion}
+        defaultValue={accordionDefaultValue}
+      />
+      {partsAfter.map((part, index) => {
+        const key = firstTextIndex + index;
+        return renderMessagePart(part, key);
+      })}
     </div>
   );
 }
@@ -78,20 +135,16 @@ export default function AgentMessage({
   className,
   message,
   thoughtDuration,
+  onApplyDiff,
 }: {
   className?: string;
   message: UIMessage;
   thoughtDuration: number;
+  onApplyDiff?: (args: { toolCallId?: string; oldText: string; newText: string }) => void;
 }) {
   return (
-    <div className={cn("space-y-2 my-2", className)}>
-      <Message message={message} />
-      <Diff
-        className="mt-2"
-        oldText="However, a closer examination reveals that argumentative essays can be tools for intellectual exploration and even delaying definitive conclusions. This essay will argue that the very structure and demands of the argumentative essay inherently make it a superior placeholder for ideas that are still in development. Despite the common perception of an argumentative essay as a battle of wills, its purpose here is far more constructive: to create a robust foundation for future development."
-        newText="However, a closer examination reveals that argumentative essays can be tools for intellectual exploration and even delaying definitive conclusions. This essay will argue that the need for reasoned claims, evidence, and counterarguments inherently make it a superior placeholder for ideas that are still in development. Despite the common perception of an argumentative essay as a battle of wills, its purpose here is far more constructive: to create a robust foundation for future development."
-        lineRange={[24, 28]}
-      />
+    <div className={cn("space-y-2 my-2 mx-2", className)}>
+      <Message message={message} onApplyDiff={onApplyDiff} />
     </div>
   );
 }

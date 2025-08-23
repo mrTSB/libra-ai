@@ -19,10 +19,11 @@ export default function ChatReasoning({
     key: string | number
   ) => React.ReactNode;
 }) {
+  console.log(partsInAccordion);
   return (
     <Accordion type="single" collapsible defaultValue={defaultValue}>
       <AccordionItem value="reasoning">
-        <AccordionTrigger className="text-md text-muted-foreground hover:no-underline hover:opacity-70 py-2">
+        <AccordionTrigger className="text-md text-muted-foreground hover:no-underline hover:opacity-70 py-2 w-full">
           {defaultValue === "reasoning" ? "Reasoning..." : `Done reasoning.`}
         </AccordionTrigger>
         <AccordionContent className="p-0 -mt-1">
@@ -30,7 +31,7 @@ export default function ChatReasoning({
             {partsInAccordion.map(
               (part, index) =>
                 part.type !== "step-start" && (
-                  <div key={index} className="flex gap-2 pl-2">
+                  <div key={index} className="flex gap-2 pl-2 w-full">
                     <div className="flex flex-col items-center gap-1 pt-2 -mb-1">
                       <div className="w-2 h-2 bg-muted-foreground/50 rounded-full" />
                       <div
