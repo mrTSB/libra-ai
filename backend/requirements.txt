@@ -22,3 +22,4 @@ selenium>=4.15.0
 webdriver-manager>=4.0.0
 playwright>=1.40.0
 agentmail==0.0.53
+aiohttp>=3.8.0
