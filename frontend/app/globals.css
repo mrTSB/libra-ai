@@ -57,7 +57,7 @@
   --secondary: var(--color-stone-100);
   --secondary-foreground: var(--color-stone-900);
   --muted: var(--color-stone-200);
-  --muted-foreground: var(--color-stone-900);
+  --muted-foreground: var(--color-stone-500);
   --accent: var(--color-stone-200);
   --accent-foreground: var(--color-stone-900);
   --destructive: var(--color-red-700);
