@@ -273,6 +273,127 @@ Results include similarity scores (0.0 to 1.0) where higher scores indicate more
 - Large documents may take several minutes to process
 - The pickle file size scales with the number of documents and chunks
 
+## 🌐 Patent Search API
+
+The system includes a REST API for patent similarity search that combines local corpus search with web search in parallel.
+
+### Starting the API Server
+
+```bash
+# Quick start
+python start_patent_api.py
+
+# Development mode with auto-reload
+python start_patent_api.py --reload
+
+# Custom port
+python start_patent_api.py --port 8080
+
+# Check requirements only
+python start_patent_api.py --check
+```
+
+### API Endpoints
+
+#### Main Patent Search
+```
+POST /patent/search
+```
+
+**Request Body:**
+```json
+{
+  "description": "A method for processing digital images using machine learning algorithms",
+  "title": "AI Image Processing System",
+  "use_web_search": true,
+  "use_local_corpus": true,
+  "max_local_results": 5,
+  "max_web_results": 5
+}
+```
+
+**Response:**
+```json
+{
+  "query_description": "A method for processing digital images...",
+  "similar_patents": [
+    {
+      "title": "Machine Learning Image Classification",
+      "description": "System for automated object detection...",
+      "source": "https://patents.google.com/patent/US12345678",
+      "similarity_score": 0.892,
+      "patent_number": "US12345678",
+      "result_type": "web_search"
+    }
+  ],
+  "local_results_count": 3,
+  "web_results_count": 4,
+  "total_results": 7,
+  "search_summary": "Found 3 similar patents in local corpus and 4 from web search"
+}
+```
+
+#### Other Endpoints
+
+- `GET /` - Health check and system status
+- `GET /patent/status` - Detailed system status and configuration
+- `GET /patent/search-local` - Search local corpus only
+- `POST /patent/reload` - Reload knowledge base
+- `GET /docs` - Interactive API documentation
+
+### Testing the API
+
+```bash
+# Run all API tests
+python test_patent_api.py
+
+# Quick health check
+python test_patent_api.py quick
+
+# Interactive search mode
+python test_patent_api.py interactive
+
+# Show usage examples
+python test_patent_api.py examples
+```
+
+### API Demonstration
+
+```bash
+# Run complete demo with realistic examples
+python api_demo.py
+
+# Show usage tips
+python api_demo.py tips
+
+# Demo additional features
+python api_demo.py features
+```
+
+### Integration Example
+
+```python
+import requests
+
+# Search for similar patents
+response = requests.post("http://localhost:8001/patent/search", json={
+    "description": "Smartphone battery optimization using AI",
+    "use_web_search": True,
+    "use_local_corpus": True,
+    "max_local_results": 5,
+    "max_web_results": 5
+})
+
+if response.status_code == 200:
+    data = response.json()
+    print(f"Found {data['total_results']} similar patents")
+    
+    for patent in data['similar_patents']:
+        print(f"- {patent['title']}")
+        print(f"  Similarity: {patent['similarity_score']:.3f}")
+        print(f"  Source: {patent['result_type']}")
+```
+
 ## 🔮 Future Enhancements
 
 Potential improvements:
@@ -282,6 +403,8 @@ Potential improvements:
 - **Batch Processing**: Parallel processing for large document sets
 - **Web Interface**: User-friendly search interface
 - **Integration**: Connect with patent databases and search engines
+- **AI Analysis**: Patent novelty assessment and prior art analysis
+- **Real-time Monitoring**: Track new patents in specific domains
 
 ## 📝 License
 

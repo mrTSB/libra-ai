@@ -18,6 +18,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from patent_doc_processor import PatentDocumentProcessor
 
+# Load environment variables
 load_dotenv()
 
 
