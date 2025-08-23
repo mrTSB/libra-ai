@@ -3,7 +3,7 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 // import Process from "@/components/process/process";
 import Agent from "@/components/agent/agent";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { ChevronRight } from "lucide-react";
@@ -49,6 +49,23 @@ SOW TEMPLATE (EXCERPT)
 • Acceptance: Seven (7) days from delivery unless rejected with a written non‑conformance list
 `);
   const [toolDiff, setToolDiff] = useState<{ oldText: string; newText: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      // Read as text for .txt/.md; browsers infer correct encoding for UTF-8
+      const text = await file.text();
+      setPaper(text);
+      setToolDiff(null);
+    } catch (err) {
+      console.error("Failed to read file:", err);
+    } finally {
+      // reset input value so same file can be re-selected later
+      e.target.value = "";
+    }
+  }
   return (
     <div className="h-full w-full p-2 pt-2 flex-1 min-h-0 flex flex-col">
       <ResizablePanelGroup
@@ -58,7 +75,21 @@ SOW TEMPLATE (EXCERPT)
       >
         <ResizablePanel defaultSize={30} style={{ overflow: "visible" }}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible max-w-2xl mx-auto">
-            <div className="text-4xl font-serif tracking-tight">Document</div>
+            <div className="flex items-center justify-between w-full">
+              <div className="text-4xl font-serif tracking-tight">Document</div>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.md,.markdown,text/plain,text/markdown"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  Upload document
+                </Button>
+              </div>
+            </div>
             <Paper
               className="min-h-0 w-full flex-1"
               paper={paper}

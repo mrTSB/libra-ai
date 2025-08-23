@@ -20,7 +20,7 @@ Objectives:
 Edit Policy:
 - Always propose edits via the write_diff tool with {oldText, newText}.
 - oldText MUST be an exact substring of the provided "Current document content" and should be as short as possible to target only the intended text.
-- Prefer many small, targeted diffs (e.g., 3–7 diffs per request) over a single large rewrite.
+- Prefer many small, targeted diffs (e.g., 3-7 diffs per request) over a single large rewrite.
 - Do NOT output the entire updated document; only use write_diff for changes.
 - For structural updates (e.g., add a missing clause), insert the new heading and paragraph(s) via one or more small diffs near a natural location.
 - When improving consistency, show representative corrections across the document in several diffs rather than one massive diff.
