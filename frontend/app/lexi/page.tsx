@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { LexiChatForm } from "@/components/lexi/chat-form";
 import { LexiChatResponseView } from "@/components/lexi/chat-response";
 import { LexiContextList } from "@/components/lexi/context-list";
@@ -14,6 +15,7 @@ export default function LexiPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedQuestion, setSubmittedQuestion] = useState<string | null>(null);
+  const params = useSearchParams();
 
   async function handleAsk(params: Parameters<typeof postLexiChat>[0]) {
     setSubmittedQuestion(params.question);
@@ -30,6 +32,24 @@ export default function LexiPage() {
       setLoading(false);
     }
   }
+
+  // Prefill and auto-run via query params
+  useEffect(() => {
+    const q = params.get("q") || params.get("query");
+    const auto = params.get("auto");
+    if (q && !submittedQuestion && !loading) {
+      if (auto === "1") {
+        void handleAsk({
+          question: q,
+          use_web_search: true,
+          use_local_docs: true,
+          max_local_results: 5,
+          max_web_results: 3,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   return (
     <div className="container mx-auto max-w-5xl p-4 space-y-2 overflow-y-auto flex flex-col min-h-0 flex-1 items-center justify-center w-full">

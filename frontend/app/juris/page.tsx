@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { JurisSearchForm } from "@/components/juris/search-form";
 import { JurisResults } from "@/components/juris/results";
 import { JurisSearchResponse, postJurisSearch } from "@/lib/juris";
@@ -13,6 +14,7 @@ export default function JurisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
+  const params = useSearchParams();
 
   async function handleSearch(params: Parameters<typeof postJurisSearch>[0]) {
     setSubmittedQuery(params.description);
@@ -29,6 +31,26 @@ export default function JurisPage() {
       setLoading(false);
     }
   }
+
+  // Prefill and auto-run via query params
+  useEffect(() => {
+    const q = params.get("q") || params.get("query");
+    const auto = params.get("auto");
+    if (q && !submittedQuery && !loading) {
+      if (auto === "1") {
+        void handleSearch({
+          description: q,
+          title: null,
+          inventor: null,
+          use_web_search: true,
+          use_local_corpus: true,
+          max_local_results: 5,
+          max_web_results: 5,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   return (
     <div className="container mx-auto max-w-5xl p-4 space-y-2 overflow-y-auto flex flex-col min-h-0 flex-1 items-center justify-center w-full">

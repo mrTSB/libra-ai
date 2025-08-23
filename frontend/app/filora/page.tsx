@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,7 @@ export default function FiloraPage() {
     timeout: 30,
     dataJson: JSON.stringify({ name: "John Doe", email: "john@example.com" }, null, 2),
   });
+  const params = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<FiloraActionResponse | null>(null);
@@ -133,6 +135,39 @@ export default function FiloraPage() {
       setLoading(false);
     }
   }
+
+  // Prefill from query params and optionally auto-run
+  useEffect(() => {
+    const qp = Object.fromEntries(params.entries());
+    const next: Partial<FormState> = {};
+    if (qp.url) next.url = qp.url;
+    if (qp.instructions) next.instructions = qp.instructions;
+    if (qp.timeout) {
+      const t = Number(qp.timeout);
+      if (!Number.isNaN(t) && t > 0) next.timeout = t;
+    }
+    if (qp.data || qp.form_data) {
+      // prefer "data" param; fallback to form_data
+      const raw = (qp.data || qp.form_data) as string;
+      try {
+        JSON.parse(raw);
+        next.dataJson = raw;
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+    if (Object.keys(next).length > 0) {
+      setForm((f) => ({ ...f, ...next } as FormState));
+    }
+    const auto = params.get("auto");
+    if (auto === "1" && (qp.instructions || qp.url || qp.data || qp.form_data)) {
+      // Delay a tick to ensure state applied
+      setTimeout(() => {
+        void handleSubmit();
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const hasOutput = slidesCount > 0;
 
