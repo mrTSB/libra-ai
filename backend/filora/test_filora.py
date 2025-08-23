@@ -5,13 +5,47 @@ Test script for Filora Agent.
 
 import requests
 import time
+import base64
 from typing import Dict, Any
+
+
+def verify_base64_screenshot(screenshot_data: str) -> bool:
+    """
+    Verify that screenshot data is valid base64 encoded image data.
+    
+    Args:
+        screenshot_data: Base64 screenshot string
+        
+    Returns:
+        True if valid base64 image data, False otherwise
+    """
+    if not screenshot_data:
+        return False
+    
+    try:
+        # Try to decode the base64 data
+        decoded_data = base64.b64decode(screenshot_data)
+        
+        # Check if it starts with PNG signature (89 50 4E 47)
+        png_signature = b'\x89PNG'
+        if decoded_data.startswith(png_signature):
+            return True
+            
+        # Check if it starts with JPEG signature (FF D8 FF)
+        jpeg_signature = b'\xff\xd8\xff'
+        if decoded_data.startswith(jpeg_signature):
+            return True
+            
+        return False
+        
+    except Exception:
+        return False
 
 
 class FiloraTestClient:
     """Test client for Filora Agent API."""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://localhost:8003"):
         self.base_url = base_url
     
     def test_health(self) -> bool:
@@ -37,7 +71,12 @@ class FiloraTestClient:
         }
         
         response = requests.post(f"{self.base_url}/fill-form", json=test_data)
-        return response.json()
+        result = response.json()
+        
+        # Add screenshot verification
+        result["screenshot_verification"] = self._verify_screenshots(result)
+        
+        return result
     
     def test_click_element(self) -> Dict[str, Any]:
         """Test element clicking."""
@@ -49,7 +88,12 @@ class FiloraTestClient:
         }
         
         response = requests.post(f"{self.base_url}/click-element", json=test_data)
-        return response.json()
+        result = response.json()
+        
+        # Add screenshot verification
+        result["screenshot_verification"] = self._verify_screenshots(result)
+        
+        return result
     
     def test_extract_data(self) -> Dict[str, Any]:
         """Test data extraction."""
@@ -62,7 +106,50 @@ class FiloraTestClient:
         }
         
         response = requests.post(f"{self.base_url}/extract-data", json=test_data)
-        return response.json()
+        result = response.json()
+        
+        # Add screenshot verification
+        result["screenshot_verification"] = self._verify_screenshots(result)
+        
+        return result
+    
+    def _verify_screenshots(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Verify that screenshots are present and valid base64 data.
+        
+        Args:
+            result: API response result
+            
+        Returns:
+            Dictionary with verification results
+        """
+        verification = {
+            "screenshots_present": False,
+            "screenshots_count": 0,
+            "valid_screenshots": 0,
+            "invalid_screenshots": 0,
+            "screenshot_details": []
+        }
+        
+        screenshots = result.get("screenshots", [])
+        verification["screenshots_count"] = len(screenshots)
+        verification["screenshots_present"] = len(screenshots) > 0
+        
+        for i, screenshot in enumerate(screenshots):
+            is_valid = verify_base64_screenshot(screenshot)
+            verification["screenshot_details"].append({
+                "index": i,
+                "valid": is_valid,
+                "length": len(screenshot) if screenshot else 0,
+                "starts_with": screenshot[:20] if screenshot else ""
+            })
+            
+            if is_valid:
+                verification["valid_screenshots"] += 1
+            else:
+                verification["invalid_screenshots"] += 1
+        
+        return verification
 
 
 def main():
@@ -89,6 +176,15 @@ def main():
             filled_fields = result.get('result', {}).get('filled_fields', [])
             successful = len([f for f in filled_fields if f.get('status') == 'success'])
             print(f"   Successfully filled {successful}/{len(filled_fields)} fields")
+            
+            # Report screenshot verification
+            screenshot_verification = result.get('screenshot_verification', {})
+            if screenshot_verification.get('screenshots_present'):
+                valid_count = screenshot_verification.get('valid_screenshots', 0)
+                total_count = screenshot_verification.get('screenshots_count', 0)
+                print(f"   📷 Screenshots: {valid_count}/{total_count} valid base64 images")
+            else:
+                print("   ❌ No screenshots captured")
         else:
             print(f"❌ Form filling test failed: {result.get('message', 'Unknown error')}")
     except Exception as e:
@@ -100,6 +196,15 @@ def main():
         result = client.test_click_element()
         if result.get('status') == 'completed':
             print("✅ Element clicking test passed")
+            
+            # Report screenshot verification
+            screenshot_verification = result.get('screenshot_verification', {})
+            if screenshot_verification.get('screenshots_present'):
+                valid_count = screenshot_verification.get('valid_screenshots', 0)
+                total_count = screenshot_verification.get('screenshots_count', 0)
+                print(f"   📷 Screenshots: {valid_count}/{total_count} valid base64 images")
+            else:
+                print("   ❌ No screenshots captured")
         else:
             error_msg = result.get('message', 'Unknown error')
             error_detail = result.get('error', '')
@@ -120,13 +225,22 @@ def main():
             print("✅ Data extraction test passed")
             extracted = result.get('result', {}).get('extracted_data', {})
             print(f"   Extracted data: {list(extracted.keys())}")
+            
+            # Report screenshot verification
+            screenshot_verification = result.get('screenshot_verification', {})
+            if screenshot_verification.get('screenshots_present'):
+                valid_count = screenshot_verification.get('valid_screenshots', 0)
+                total_count = screenshot_verification.get('screenshots_count', 0)
+                print(f"   📷 Screenshots: {valid_count}/{total_count} valid base64 images")
+            else:
+                print("   ❌ No screenshots captured")
         else:
             print(f"❌ Data extraction test failed: {result.get('message', 'Unknown error')}")
     except Exception as e:
         print(f"❌ Data extraction test error: {e}")
     
     print("\n🎉 Testing completed!")
-    print("\n📋 API Documentation: http://localhost:8000/docs")
+    print("\n📋 API Documentation: http://localhost:8003/docs")
 
 
 if __name__ == "__main__":
