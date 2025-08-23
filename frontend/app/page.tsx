@@ -18,6 +18,8 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
@@ -125,7 +127,7 @@ export default function Home() {
             )}
           </Button>
         </div>
-        <div className="self-center flex flex-wrap items-center justify-center gap-2 text-sm max-w-2xl">
+        {/* <div className="self-center flex flex-wrap items-center justify-center gap-2 text-sm max-w-2xl">
           {[
             "Summarize this NDA and list key risks",
             "Find precedent for implied covenant of good faith",
@@ -140,7 +142,7 @@ export default function Home() {
               {s}
             </button>
           ))}
-        </div>
+        </div> */}
       </div>
 
       {error && <div className="text-sm text-red-600 self-center">{error}</div>}
@@ -152,15 +154,23 @@ export default function Home() {
             <Link key={s.href} href={s.href} className="group">
               <Card
                 variant="fancy_light"
-                className="relative overflow-hidden h-full transition-all duration-300 ease-out group-hover:-translate-y-0.5 border-border group-hover:scale-105 group-active:scale-95 group-active:shadow-xl"
+                className={cn(
+                  "relative overflow-hidden h-full transition-all duration-300 ease-out group-hover:-translate-y-0.5 border-border group-hover:scale-105 group-active:scale-95 group-active:shadow-xl"
+                )}
               >
-                <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-primary/10 to-transparent" />
-                <CardHeader>
+                <CardHeader className="relative z-10 max-w-1/2">
                   <CardTitle className="text-5xl font-serif mt-4">{s.title}</CardTitle>
-                  <CardDescription className="text-lg -mb-2 text-primary/80">
+                  <CardDescription className="text-md -mb-2 text-muted-foreground/60">
                     {s.description}
                   </CardDescription>
                 </CardHeader>
+                <Image
+                  src={`/assets/${s.href}.jpeg`}
+                  alt={s.title}
+                  width={1000}
+                  height={1000}
+                  className="w-full h-full object-cover absolute inset-0 grayscale mix-blend-multiply opacity-50 translate-x-1/4 group-hover:scale-110 transition-all duration-300 ease-out"
+                />
               </Card>
             </Link>
           );

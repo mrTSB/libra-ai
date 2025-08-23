@@ -9,7 +9,7 @@ const cardVariants = cva("text-card-foreground rounded-3xl p-6 flex flex-col gap
       flat: "bg-muted",
       outline: "border border-border",
       fancy_light:
-        "border border-primary/30 bg-transparent bg-radial-[at_70%_25%] from-transparent to-primary/20 shadow-lg inset-shadow-sm shadow-border/60 inset-shadow-white/80 transition-all duration-500 hover:bg-primary/10",
+        "border border-primary/30 bg-transparent bg-radial-[at_70%_25%] from-transparent to-primary/20 shadow-lg inset-shadow-sm shadow-border/60 inset-shadow-white/80 transition-all duration-500",
     },
   },
   defaultVariants: {
