@@ -123,6 +123,7 @@ def chat_request(
     conversation_context = _format_history(history)
 
     full_prompt = (
+        "You are Sage, a helpful legal assistant that helps the users with their requests (with access to the web and a database of emails)" +
         (
             f"Conversation so far:\n{conversation_context}\n\n"
             if conversation_context
