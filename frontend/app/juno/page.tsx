@@ -26,6 +26,7 @@ In this paper, we explore how argumentative writing acts as an instrument for di
 Argumentative essays serve as structured spaces for evolving ideas. By requiring claims, evidence, and counterarguments, they transform ambiguous intuitions into defensible propositions that can be refined over time.
 
 `);
+  const [toolDiff, setToolDiff] = useState<{ oldText: string; newText: string } | null>(null);
   return (
     <div className="h-full w-full p-2 pt-2 flex-1 min-h-0 flex flex-col">
       <ResizablePanelGroup
@@ -36,14 +37,24 @@ Argumentative essays serve as structured spaces for evolving ideas. By requiring
         <ResizablePanel defaultSize={30} style={{ overflow: "visible" }}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4 overflow-visible max-w-2xl mx-auto">
             <div className="text-4xl font-serif tracking-tight">Document</div>
-            <Paper className="min-h-0 w-full flex-1" paper={paper} setPaper={setPaper} />
+            <Paper
+              className="min-h-0 w-full flex-1"
+              paper={paper}
+              setPaper={setPaper}
+              toolDiff={toolDiff}
+            />
           </div>
         </ResizablePanel>
         <ResizableHandle className="bg-transparent p-2 w-4" />
-        <ResizablePanel defaultSize={10}>
+        <ResizablePanel defaultSize={20}>
           <div className="flex flex-col h-full w-full items-start justify-start gap-4">
             <div className="text-4xl font-serif tracking-tight">Juno Agent</div>
-            <Agent className="h-full w-full" paper={paper} setPaper={setPaper} />
+            <Agent
+              className="h-full w-full"
+              paper={paper}
+              setPaper={setPaper}
+              onToolDiffPreview={setToolDiff}
+            />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

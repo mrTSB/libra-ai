@@ -117,18 +117,16 @@ export function Message({
   const partsAfter = hasTextPart ? parts.slice(firstTextIndex) : [];
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <div className={cn("flex flex-col gap-1 relative text-sm")}>
-        <ChatReasoning
-          renderMessagePart={renderMessagePart}
-          partsInAccordion={partsInAccordion}
-          defaultValue={accordionDefaultValue}
-        />
-        {partsAfter.map((part, index) => {
-          const key = firstTextIndex + index;
-          return renderMessagePart(part, key);
-        })}
-      </div>
+    <div className={cn("flex flex-col gap-1 relative text-sm w-full")}>
+      <ChatReasoning
+        renderMessagePart={renderMessagePart}
+        partsInAccordion={partsInAccordion}
+        defaultValue={accordionDefaultValue}
+      />
+      {partsAfter.map((part, index) => {
+        const key = firstTextIndex + index;
+        return renderMessagePart(part, key);
+      })}
     </div>
   );
 }
@@ -145,7 +143,7 @@ export default function AgentMessage({
   onApplyDiff?: (args: { toolCallId?: string; oldText: string; newText: string }) => void;
 }) {
   return (
-    <div className={cn("space-y-2 my-2", className)}>
+    <div className={cn("space-y-2 my-2 mx-2", className)}>
       <Message message={message} onApplyDiff={onApplyDiff} />
     </div>
   );

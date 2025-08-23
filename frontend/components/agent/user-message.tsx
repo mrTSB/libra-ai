@@ -17,7 +17,7 @@ export default function UserMessage({
   return (
     <div
       className={cn(
-        "flex w-full flex-col space-y-2 rounded-xl border bg-card p-2 shadow-sm shadow-stone-400/10 transition-all hover:-translate-y-px hover:shadow-md",
+        "flex w-full flex-col space-y-2 rounded-xl border bg-card p-2 shadow-sm shadow-stone-400/10 transition-all hover:-translate-y-px hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-full",
         className
       )}
     >

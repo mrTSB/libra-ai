@@ -43,30 +43,32 @@ export default function Diff({
           ) : null}
         </div>
       </div>
-      <div className="group relative min-h-0 flex-1 overflow-hidden bg-card p-2 py-0 text-sm flex flex-col justify-center">
-        {diff.map((segment, index) => {
-          if (segment.added) {
-            return (
-              <span key={index} className="inline text-constructive group-hover:hidden">
-                {segment.value}
-              </span>
-            );
-          } else if (segment.removed) {
-            return (
-              <span key={index} className="hidden text-destructive group-hover:inline">
-                {segment.value}
-              </span>
-            );
-          } else {
-            return (
-              <span key={index} className="inline">
-                {segment.value}
-              </span>
-            );
-          }
-        })}
+      <div className="group relative min-h-0 flex-1 overflow-hidden bg-card p-2 py-0 text-sm flex flex-col justify-center items-center">
+        <div className="w-full h-fit my-auto">
+          {diff.map((segment, index) => {
+            if (segment.added) {
+              return (
+                <span key={index} className="inline text-constructive group-hover:hidden">
+                  {segment.value}
+                </span>
+              );
+            } else if (segment.removed) {
+              return (
+                <span key={index} className="hidden text-destructive group-hover:inline">
+                  {segment.value}
+                </span>
+              );
+            } else {
+              return (
+                <span key={index} className="inline">
+                  {segment.value}
+                </span>
+              );
+            }
+          })}
+        </div>
         <div className="absolute top-0 h-16 w-full bg-gradient-to-b from-card to-transparent"></div>
-        <div className="sticky bottom-0 h-16 w-full bg-gradient-to-t from-card to-transparent"></div>
+        <div className="absolute bottom-0 h-16 w-full bg-gradient-to-t from-card to-transparent"></div>
       </div>
     </div>
   );
