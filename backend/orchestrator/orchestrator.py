@@ -353,24 +353,24 @@ For /extract-data, include selectors if data types can be inferred."""
                 # Build request data based on action type
                 if action_type == "fill-form":
                     request_data = {
-                        "url": "https://example.com",  # Would need URL from context
+                        "url": "https://httpbin.org/forms/post",  # Would need URL from context
                         "form_data": result.get("request_data", {}).get("form_data", []),
                         "submit": False
                     }
                 elif action_type == "click-element":
                     request_data = {
-                        "url": "https://example.com",  # Would need URL from context
+                        "url": "https://httpbin.org/forms/post",  # Would need URL from context
                         "selector": result.get("request_data", {}).get("selector", "button"),
                         "description": query
                     }
                 elif action_type == "extract-data":
                     request_data = {
-                        "url": "https://example.com",  # Would need URL from context
+                        "url": "https://httpbin.org/forms/post",  # Would need URL from context
                         "selectors": result.get("request_data", {}).get("selectors", {})
                     }
                 else:  # Default to general action
                     request_data = {
-                        "url": "https://example.com",  # Would need URL from context
+                        "url": "https://httpbin.org/forms/post",  # Would need URL from context
                         "action_type": "general",
                         "instructions": query,
                         "timeout": 30
@@ -390,7 +390,7 @@ For /extract-data, include selectors if data types can be inferred."""
                 return {
                     "endpoint": "/action",
                     "request_data": {
-                        "url": "https://example.com",
+                        "url": "https://httpbin.org/forms/post",
                         "action_type": "general",
                         "instructions": query,
                         "timeout": 30
@@ -405,7 +405,7 @@ For /extract-data, include selectors if data types can be inferred."""
             return {
                 "endpoint": "/action",
                 "request_data": {
-                    "url": "https://example.com",
+                    "url": "https://httpbin.org/forms/post",
                     "action_type": "general",
                     "instructions": query,
                     "timeout": 30

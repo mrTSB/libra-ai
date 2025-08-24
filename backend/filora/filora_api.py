@@ -400,7 +400,7 @@ class FiloraBrowserAgent:
                 return url
         
         # Default fallback
-        return "https://example.com"
+        return "https://httpbin.org/forms/post"
 
     def _create_dynamic_task_description(self, request: QueryRequest, url: str) -> str:
         """Create a dynamic task description from natural language query."""

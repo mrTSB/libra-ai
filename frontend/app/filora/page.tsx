@@ -19,7 +19,7 @@ type FormState = {
 
 export default function FiloraPage() {
   const [form, setForm] = useState<FormState>({
-    url: "https://example.com",
+    url: "https://httpbin.org/forms/post",
     instructions: "Fill out the signup form",
     timeout: 30,
     dataJson: JSON.stringify({ name: "John Doe", email: "john@example.com" }, null, 2),

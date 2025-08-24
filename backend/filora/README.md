@@ -49,7 +49,7 @@ Execute any browser automation action with full location tracking.
 
 ```json
 {
-  "url": "https://example.com",
+  "url": "https://httpbin.org/forms/post",
   "action_type": "click",
   "data": {
     "selector": "#submit-button"
@@ -96,7 +96,7 @@ Simplified form filling endpoint with location tracking.
 
 ```json
 {
-  "url": "https://example.com/contact",
+  "url": "https://httpbin.org/forms/post",
   "form_data": [
     {"name": "name", "value": "John Doe"},
     {"name": "email", "value": "john@example.com"},
@@ -135,7 +135,7 @@ Click on page elements with precise location tracking.
 
 ```json
 {
-  "url": "https://example.com",
+  "url": "https://httpbin.org/forms/post",
   "selector": "button.submit-btn",
   "description": "Submit button"
 }
@@ -146,7 +146,7 @@ Extract data from pages with element locations.
 
 ```json
 {
-  "url": "https://example.com/profile",
+  "url": "https://httpbin.org/forms/post",
   "selectors": {
     "name": ".user-name",
     "email": ".user-email",
@@ -230,7 +230,7 @@ import requests
 
 # Click an element and get its location
 response = requests.post("http://localhost:8000/action", json={
-    "url": "https://example.com",
+    "url": "https://httpbin.org/forms/post",
     "action_type": "click",
     "data": {
         "selector": "#login-button"
@@ -255,7 +255,7 @@ if result['locations']:
 ```python
 # Fill a form and track all field locations
 response = requests.post("http://localhost:8000/fill-form", json={
-    "url": "https://example.com/contact",
+    "url": "https://httpbin.org/forms/post",
     "form_data": [
         {"name": "name", "value": "Alice Johnson"},
         {"name": "email", "value": "alice@example.com"},
@@ -279,7 +279,7 @@ for i, location in enumerate(result['locations']):
 curl -X POST "http://localhost:8000/action" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://example.com",
+    "url": "https://httpbin.org/forms/post",
     "action_type": "click",
     "data": {
       "selector": "button.primary-btn"
@@ -298,7 +298,7 @@ const response = await fetch('http://localhost:8000/action', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    url: 'https://example.com',
+    url: 'https://httpbin.org/forms/post',
     action_type: 'click',
     data: {
       selector: '#submit-form'
