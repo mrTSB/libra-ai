@@ -24,6 +24,7 @@ export type FiloraActionResponse = {
   message: string;
   error?: string | null;
   locations: FiloraLocation[];
+  summary: string[];
 };
 
 export async function postFiloraAction(body: FiloraActionRequest): Promise<FiloraActionResponse> {

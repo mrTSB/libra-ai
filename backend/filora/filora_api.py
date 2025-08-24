@@ -107,6 +107,7 @@ class ActionResponse(BaseModel):
     locations: List[Location] = Field(
         default_factory=list, description="Locations of interacted elements"
     )
+    summary: List[str] = Field(default_factory=list, description="Two-word summaries of actions performed at each location")
 
 
 class FillFormRequest(BaseModel):
@@ -832,6 +833,82 @@ class FiloraBrowserAgent:
         logger.debug("No screenshot capture method succeeded")
         return None
 
+    def _generate_action_summaries(self, action_type: ActionType, locations: List[Location], success: bool = True) -> List[str]:
+        """Generate 2-word summaries for each action performed at each location."""
+        if not success:
+            return ["Task Failed"]
+        
+        summaries = []
+        
+        if action_type == ActionType.FILL_FORM:
+            # Generate varied summaries for each form field filled
+            form_summaries = ["Text Entered", "Field Completed", "Data Input", "Form Updated", "Value Set"]
+            submit_summaries = ["Form Submitted", "Submit Clicked", "Data Sent", "Form Processed"]
+            checkbox_summaries = ["Option Selected", "Box Checked", "Choice Made", "Selection Updated"]
+            
+            for i, location in enumerate(locations):
+                field_type = location.attributes.get("type", "text")
+                if field_type in ["checkbox", "radio"]:
+                    summaries.append(checkbox_summaries[i % len(checkbox_summaries)])
+                elif field_type == "submit":
+                    summaries.append(submit_summaries[i % len(submit_summaries)])
+                else:
+                    summaries.append(form_summaries[i % len(form_summaries)])
+            
+            # If no locations but form was filled, add generic summary
+            if not summaries:
+                summaries.append("Form Completed")
+                
+        elif action_type == ActionType.CLICK:
+            # Generate varied summaries for each click location
+            button_summaries = ["Button Pressed", "Control Clicked", "Action Triggered", "Button Activated"]
+            link_summaries = ["Link Followed", "Navigation Clicked", "Link Activated", "Route Selected"]
+            general_summaries = ["Element Clicked", "Target Selected", "Item Pressed", "Object Activated"]
+            
+            for i, location in enumerate(locations):
+                tag_name = location.tag_name.lower() if location.tag_name else ""
+                if "button" in tag_name or "submit" in location.attributes.get("type", ""):
+                    summaries.append(button_summaries[i % len(button_summaries)])
+                elif tag_name in ["a", "link"]:
+                    summaries.append(link_summaries[i % len(link_summaries)])
+                else:
+                    summaries.append(general_summaries[i % len(general_summaries)])
+            
+            # If no locations but click was performed, add generic summary
+            if not summaries:
+                summaries.append("Element Clicked")
+                
+        elif action_type == ActionType.EXTRACT:
+            # Generate varied summaries for each extraction location
+            extract_summaries = ["Data Extracted", "Info Retrieved", "Content Scraped", "Text Captured", "Data Collected"]
+            
+            for i, location in enumerate(locations):
+                summaries.append(extract_summaries[i % len(extract_summaries)])
+            
+            # If no locations but extraction was performed, add generic summary
+            if not summaries:
+                summaries.append("Data Retrieved")
+                
+        elif action_type == ActionType.NAVIGATE:
+            nav_summaries = ["Page Loaded", "Site Navigated", "URL Visited", "Browser Redirected"]
+            summaries.append(nav_summaries[0])  # Single navigation action
+            
+        elif action_type == ActionType.CUSTOM:
+            # For custom actions, generate varied summaries
+            custom_summaries = ["Task Executed", "Action Performed", "Operation Completed", "Process Finished", "Step Executed"]
+            
+            if locations:
+                for i, location in enumerate(locations):
+                    summaries.append(custom_summaries[i % len(custom_summaries)])
+            else:
+                summaries.append("Task Completed")
+        
+        # If no summaries generated, provide default
+        if not summaries:
+            summaries.append("Action Completed")
+            
+        return summaries
+
     def _create_task_description(self, request: ActionRequest) -> str:
         """Create a comprehensive task description for the Browser Use AI agent."""
         url = request.url
@@ -1104,6 +1181,7 @@ async def execute_action_endpoint(request: ActionRequest):
     try:
         result = await browser_agent.execute_action(request)
 
+        locations = result.get("locations", [])
         return ActionResponse(
             task_id=result["task_id"],
             status=TaskStatus.COMPLETED,
@@ -1111,13 +1189,23 @@ async def execute_action_endpoint(request: ActionRequest):
             screenshots=result.get("screenshots", []),
             execution_time=result.get("execution_time", 0.0),
             message="Action completed successfully",
-            locations=result.get("locations", []),
+            locations=locations,
+            summary=browser_agent._generate_action_summaries(request.action_type, locations, True),
         )
 
     except Exception as e:
         logger.error(f"Error executing action: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Action execution failed: {str(e)}"
+        # Return a failed response with summary instead of raising exception
+        return ActionResponse(
+            task_id="error",
+            status=TaskStatus.FAILED,
+            result={},
+            screenshots=[],
+            execution_time=0.0,
+            message=f"Action execution failed: {str(e)}",
+            error=str(e),
+            locations=[],
+            summary=browser_agent._generate_action_summaries(request.action_type, [], False),
         )
 
 
@@ -1182,12 +1270,21 @@ async def execute_query_endpoint(request: QueryRequest):
             execution_time=result.get("execution_time", 0.0),
             message="Query executed successfully",
             locations=result.get("locations", []),
+            summary=["Query Executed"],
         )
 
     except Exception as e:
         logger.error(f"Error executing query: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Query execution failed: {str(e)}"
+        return ActionResponse(
+            task_id="error",
+            status=TaskStatus.FAILED,
+            result={},
+            screenshots=[],
+            execution_time=0.0,
+            message=f"Query execution failed: {str(e)}",
+            error=str(e),
+            locations=[],
+            summary=["Query Failed"],
         )
 
 

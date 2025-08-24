@@ -35,6 +35,7 @@ export default function FiloraPage() {
   const { x, y, thoughts, moveTo, setThoughts } = usePointer({ x: 24, y: 24, thoughts: null });
 
   const locations: FiloraLocation[] = response?.locations ?? [];
+  const summaries: string[] = response?.summary ?? [];
   const screenshotsRaw: string[] = useMemo(() => {
     if (response?.screenshots && Array.isArray(response.screenshots)) return response.screenshots;
     const r: any = response?.result;
@@ -69,13 +70,14 @@ export default function FiloraPage() {
     setCurrentShot(0);
     if (locations.length > 0) {
       const loc = locations[0];
-      moveTo({ x: loc.x, y: loc.y, thoughts: `${loc.tag_name} ${loc.selector || ""}`.trim() });
+      const summary = summaries[0] || `${loc.tag_name} ${loc.selector || ""}`.trim();
+      moveTo({ x: loc.x, y: loc.y, thoughts: summary });
       setPlayhead(0);
     } else {
       setThoughts(null);
       setPlayhead(0);
     }
-  }, [response]);
+  }, [response, summaries]);
 
   // Sync pointer to current slide if a matching location exists
   useEffect(() => {
@@ -83,9 +85,10 @@ export default function FiloraPage() {
     const i = Math.min(currentShot, locations.length - 1);
     const loc = locations[i];
     if (!loc) return;
-    moveTo({ x: loc.x, y: loc.y, thoughts: `${loc.tag_name} ${loc.selector || ""}`.trim() });
+    const summary = summaries[i] || `${loc.tag_name} ${loc.selector || ""}`.trim();
+    moveTo({ x: loc.x, y: loc.y, thoughts: summary });
     setPlayhead(i);
-  }, [currentShot, locations, moveTo]);
+  }, [currentShot, locations, summaries, moveTo]);
 
   async function handleSubmit() {
     setLoading(true);
@@ -338,6 +341,11 @@ export default function FiloraPage() {
               <div className="text-muted-foreground">
                 Execution time: {response.execution_time}s
               </div>
+              {summaries && summaries.length > 0 && (
+                <div className="text-muted-foreground">
+                  Action summaries: {summaries.join(', ')}
+                </div>
+              )}
               {screenshotsRaw && screenshotsRaw.length > 0 && (
                 <div className="mt-2 text-muted-foreground">
                   Raw screenshot heads:
